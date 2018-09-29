@@ -1,9 +1,11 @@
 /*
-ex1.cpp
-A sequential version of ex1.cpp
-2018-09-26
-g++ -std=c++11 ex1_seq.cpp -o ex1_seq.exe
-usage: ex1_seq.exe T NT
+template.cpp
+This is code that can be used in the other programs to get started.
+A sequential version.
+2018-09-28
+g++ template.cpp -o template.exe
+g++ -std=c++11 -Wall -pthread template.cpp -o template.exe
+usage: template.exe T NT
 */
 
 #include <iostream>
@@ -63,42 +65,24 @@ int main(int argc, char *argv[])
     }
 
   // trapezes = argv[2]
-  int num_trapezes;
+  int trapezes;
   try
     {
-      num_trapezes = std::stoi(argv[2]);
+      trapezes = std::stoi(argv[2]);
     }
   catch (std::exception)
     {
       usage(argv[0]);
     }
-  if (num_trapezes < 1)
+  if (trapezes < 1)
     {
       usage(argv[0]);
     }
 
     std::cout << "Arguments entered correctly. Now running program." << std::endl;
 
-  double step, x, sum = 0.0, pi = 0.0;
-  int i;
-
     // *** timing begins here ***
     auto start_time = std::chrono::system_clock::now();
-
-    // Now calculate the areas
-    // Area of each trapeze given by ( f(x2)+f(x1)/2 ) * step
-    step = 1.0/num_trapezes;
-    for(i=0; i < num_trapezes; i++) {
-      /*x1 = i;
-      x2 = i + step;
-      sum = sum + ((x1 + x2)/2.0);*/
-      x = (i+0.5)*step;
-      sum = sum + 4.0/(1.0+x*x);
-    }
-    pi = sum * step;
-    
-    std::cout.precision(17);
-    std::cout << std::fixed << pi << std::endl;
 
     std::chrono::duration<double> duration =
         (std::chrono::system_clock::now() - start_time);
