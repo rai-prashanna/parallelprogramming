@@ -99,42 +99,41 @@ int main(int argc, char* argv[])
     unsigned int sqrt_num = (int) ceil(sqrt((double) NPRIMES));
 
     primes=init(primes,NPRIMES);
-    filterPrimes(2,primes,NPRIMES);
-    displayPrimeNumbers(primes,NPRIMES);
-
+    filterPrimes(2,primes,sqrt_num);
 
     /* Create (and run) all the threads. */
 
-//    primes=filterPrimes(2,primes,sqrt_num);
-//
-//    for (int i = sqrt_num+1,j=0; j < NUM_THREADS; j++)
-//    {
-//    if(i>=NPRIMES)
-//    {
-//    break;
-//    }
-//    args[j].startindex = i;
-//    args[j].upperlimit=NPRIMES;
-//    args[j].primes=primes;
-//        if (pthread_create(&threads[i], NULL,calculate_prime_pthread_runnable, &args[j]))
-//        {
-//            fprintf(stderr, "Error creating thread #%d!\n", j);
-//            exit(1);
-//        }
-//        i=i+1;
-//
-//    }
-//
-//    /* Block until all threads are finished. */
-//    for (int i = 0; i < NUM_THREADS; i++)
-//    {
-//        pthread_join(threads[i], NULL);
-//    }
+    primes=filterPrimes(2,primes,sqrt_num);
+
+    for (int i = sqrt_num+1,j=0; j < NUM_THREADS; j++)
+    {
+        if(i>=NPRIMES)
+        {
+            break;
+        }
+        args[j].startindex = i;
+        args[j].upperlimit=NPRIMES;
+        args[j].primes=primes;
+        if (pthread_create(&threads[j], NULL,calculate_prime_pthread_runnable, &args[j]))
+        {
+            fprintf(stderr, "Error creating thread #%d!\n", j);
+            exit(1);
+        }
+        i=i+1;
+
+    }
+
+    /* Block until all threads are finished. */
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
 
 //displayPrimeNumbers(primes,NPRIMES);
 
     /* displayPrimeNumbers(primes,NPRIMES);
     */
+    displayPrimeNumbers(primes,NPRIMES);
 
     return 0;
 
