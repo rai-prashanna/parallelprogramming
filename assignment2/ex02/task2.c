@@ -30,7 +30,7 @@ int getNextPrime(int i, int *x)
     pthread_mutex_lock(&lock);
     while (*(x + i) == 0)
     {
-        i++;
+        i=i+1;
     }
     pthread_mutex_unlock(&lock);
 
@@ -96,8 +96,10 @@ void *filterPrimes(int startingindex,int *primes,int maxlimit)
         /*find multiple i.e j=i*2 and j=j+i and marked that number by setting array[index]=0 */
         for(int j = (i*2); j <= NPRIMES; j += i)
         {
-            printf("i: %d, j: %d\n", i, j);
+
+            pthread_mutex_lock(&lock);
             *(primes +j) = 0;
+            pthread_mutex_unlock(&lock);
 
         }
 
@@ -124,8 +126,8 @@ void *calculate_prime_pthread_runnable(void *arg)
 
 int main(int argc, char* argv[])
 {
-    int* primes;
-    int NUM_THREADS=1;
+    int* primes,prime1;
+    int NUM_THREADS=2;
     NPRIMES = 100;
     pthread_t threads[NUM_THREADS]; /* An array of the threads. */
     struct thread_arg_t args[NUM_THREADS]; /* One argument struct per thread. */
@@ -145,7 +147,7 @@ int main(int argc, char* argv[])
         }
         args[j].startindex = i;
         args[j].upperlimit=NPRIMES;
-args[0].primes=primes;
+        args[j].primes=primes;
         if (pthread_create(&threads[j], NULL,calculate_prime_pthread_runnable, &args[j]))
         {
             fprintf(stderr, "Error creating thread #%d!\n", j);
@@ -163,10 +165,7 @@ args[0].primes=primes;
 
     sleep();
     primes=args[0].primes;
-//displayPrimeNumbers(primes,NPRIMES);
 
-    /* displayPrimeNumbers(primes,NPRIMES);
-    */
     displayPrimeNumbers(primes,NPRIMES);
 
     return 0;
