@@ -22,39 +22,39 @@ struct thread_arg_t
 };
 
 /* Returns the index of the next prime (non-zero, since we "knock out" non-primes by setting their value to zero) */
-int getNextPrime(int i, int x[])
+int getNextPrime(int i, int *x)
 {
-    while (x[i] == 0)
+    while (*(x + i) == 0)
     {
         i++;
     }
     return i;
 }
 
-void displayPrimeNumbers(int primes[],int NPRIMES)
+void displayPrimeNumbers(int *primes,int NPRIMES)
 {
     for(int i=2; i < NPRIMES; i++)
     {
-        if ( primes[i] != 0 )
+        if ( *(primes +i) != 0 )
         {
-            printf("Prime number: %d\n", primes[i]);
+            printf("Prime number: %d\n", *(primes +i));
         }
     }
 }
 
-int *init(int primes[],int NPRIMES)
+int *init(int *primes,int NPRIMES)
 {
     /* we start at 2 because it is the smallest prime */
     /*list all numbers from 2 to max */
     for(int i=2; i < NPRIMES; i++)
     {
-        primes[i] = i;
+        *(primes +i) = i;
         printf("%d\n", i);
     }
     return primes;
 }
 
-int *filterPrimes(int startingindex,int *primes,int maxlimit)
+void *filterPrimes(int startingindex,int *primes,int maxlimit)
 {
     /*make iterations from 2 to NPRIMES and update counter with next prime number*/
     for(int i=startingindex; i <= maxlimit; i = getNextPrime(i+1, primes))
@@ -68,10 +68,10 @@ int *filterPrimes(int startingindex,int *primes,int maxlimit)
         }
 
     }
-    return primes;
+    return NULL;
 }
 
-int *calculate_prime_pthread_runnable(void *arg)
+void *calculate_prime_pthread_runnable(void *arg)
 {
     /* Cast the argument from void* to its proper type. */
     struct thread_arg_t *targ = arg;
@@ -82,9 +82,9 @@ int *calculate_prime_pthread_runnable(void *arg)
     unsigned int startingindex =  targ->startindex;
     unsigned int upperlimit =  targ->upperlimit;
     tempprimes= targ->primes;
-    resultprimes=filterPrimes(startingindex,tempprimes,upperlimit);
+    filterPrimes(startingindex,targ->primes,upperlimit);
 
-    return resultprimes;
+    return NULL;
 }
 
 int main(int argc, char* argv[])
@@ -99,44 +99,42 @@ int main(int argc, char* argv[])
     unsigned int sqrt_num = (int) ceil(sqrt((double) NPRIMES));
 
     primes=init(primes,NPRIMES);
+    filterPrimes(2,primes,NPRIMES);
+    displayPrimeNumbers(primes,NPRIMES);
+
+
     /* Create (and run) all the threads. */
 
-    primes=filterPrimes(2,primes,sqrt_num);
-
-    for (int i = sqrt_num+1,j=0; j < NUM_THREADS; j++)
-    {
-    if(i>=NPRIMES)
-    {
-    break;
-    }
-    args[j].startindex = i;
-    args[j].upperlimit=NPRIMES;
-    args[j].primes=primes;
-        if (pthread_create(&threads[i], NULL,calculate_prime_pthread_runnable, &args[j]))
-        {
-            fprintf(stderr, "Error creating thread #%d!\n", j);
-            exit(1);
-        }
-        i=i+1;
-
-    }
-
-    /* Block until all threads are finished. */
-    for (int i = 0; i < NUM_THREADS; i++)
-    {
-        pthread_join(threads[i], NULL);
-    }
+//    primes=filterPrimes(2,primes,sqrt_num);
+//
+//    for (int i = sqrt_num+1,j=0; j < NUM_THREADS; j++)
+//    {
+//    if(i>=NPRIMES)
+//    {
+//    break;
+//    }
+//    args[j].startindex = i;
+//    args[j].upperlimit=NPRIMES;
+//    args[j].primes=primes;
+//        if (pthread_create(&threads[i], NULL,calculate_prime_pthread_runnable, &args[j]))
+//        {
+//            fprintf(stderr, "Error creating thread #%d!\n", j);
+//            exit(1);
+//        }
+//        i=i+1;
+//
+//    }
+//
+//    /* Block until all threads are finished. */
+//    for (int i = 0; i < NUM_THREADS; i++)
+//    {
+//        pthread_join(threads[i], NULL);
+//    }
 
 //displayPrimeNumbers(primes,NPRIMES);
 
     /* displayPrimeNumbers(primes,NPRIMES);
     */
-    int* result= args[0].primes;
-    printf("hello \n");
-   printf("%d \n",result[13]);
-   printf("%d \n",result[3]);
-   printf("%d \n",result[14]);
-   printf("%d \n",result[15]);
 
     return 0;
 
