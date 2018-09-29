@@ -6,6 +6,9 @@
 /* Define a data type for the arguments to pass to the functions of threads. */
 struct thread_arg_t
 {
+    /* thread id */
+    unsigned int id;
+
     /* starting index */
     unsigned int startindex;
 
@@ -54,7 +57,7 @@ int *init(int primes[],int NPRIMES)
 int *filterPrimes(int startingindex,int *primes,int maxlimit)
 {
     /*make iterations from 2 to NPRIMES and update counter with next prime number*/
-    for(int i=startingindex; i < maxlimit; i = getNextPrime(i+1, primes))
+    for(int i=startingindex; i <= maxlimit; i = getNextPrime(i+1, primes))
     {
         /*find multiple i.e j=i*2 and j=j+i and marked that number by setting array[index]=0 */
         for(int j = (i*2); j < maxlimit; j += i)
@@ -68,7 +71,7 @@ int *filterPrimes(int startingindex,int *primes,int maxlimit)
     return primes;
 }
 
-int *approximate_pi_pthread_runnable(void *arg)
+int *calculate_prime_pthread_runnable(void *arg)
 {
     /* Cast the argument from void* to its proper type. */
     struct thread_arg_t *targ = arg;
@@ -86,22 +89,55 @@ int *approximate_pi_pthread_runnable(void *arg)
 
 int main(int argc, char* argv[])
 {
-    pthread_t thread1, thread2;
     int* primes;
     int NPRIMES;
-
-    NPRIMES = 24;
+    int NUM_THREADS=1;
+    NPRIMES = 100;
+    pthread_t threads[NUM_THREADS]; /* An array of the threads. */
+    struct thread_arg_t args[NUM_THREADS]; /* One argument struct per thread. */
     primes = (int*)malloc(NPRIMES * sizeof(int));
     unsigned int sqrt_num = (int) ceil(sqrt((double) NPRIMES));
 
     primes=init(primes,NPRIMES);
-    filterPrimes(2,primes,24);
+    /* Create (and run) all the threads. */
+
+    primes=filterPrimes(2,primes,sqrt_num);
+
+    for (int i = sqrt_num+1,j=0; j < NUM_THREADS; j++)
+    {
+    if(i>=NPRIMES)
+    {
+    break;
+    }
+    args[j].startindex = i;
+    args[j].upperlimit=NPRIMES;
+    args[j].primes=primes;
+        if (pthread_create(&threads[i], NULL,calculate_prime_pthread_runnable, &args[j]))
+        {
+            fprintf(stderr, "Error creating thread #%d!\n", j);
+            exit(1);
+        }
+        i=i+1;
+
+    }
+
+    /* Block until all threads are finished. */
+    for (int i = 0; i < NUM_THREADS; i++)
+    {
+        pthread_join(threads[i], NULL);
+    }
+
 //displayPrimeNumbers(primes,NPRIMES);
 
     /* displayPrimeNumbers(primes,NPRIMES);
     */
+    int* result= args[0].primes;
     printf("hello \n");
-    printf("world \n");
+   printf("%d \n",result[13]);
+   printf("%d \n",result[3]);
+   printf("%d \n",result[14]);
+   printf("%d \n",result[15]);
 
     return 0;
+
 }
