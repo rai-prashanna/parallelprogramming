@@ -7,5 +7,9 @@ g++ -std=c++11 -Wall -pthread verify_mutex.cpp -o verify_mutex
 
 int main()
 {
+    int i = 0;
     std::mutex m;
+    m.lock();
+    i = i + 1;
+    m.unlock();
 }
