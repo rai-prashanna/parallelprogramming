@@ -5,6 +5,8 @@
 
 #include <mutex>
 
+std::mutex mtx;
+
 
 /* a sorted list implementation by David Klaftenegger, 2015
  * please report bugs or suggest improvements to david.klaftenegger@it.uu.se
@@ -21,10 +23,12 @@ struct node {
 template<typename T>
 class sorted_list {
 
+	mtx.lock();
 	node<T>* first = nullptr;
+	mtx.unlock();
 
-	private:
-		std::mutex mtx;
+	//private:
+	//	std::mutex mtx;
 
 	public:
 		/* default implementations:
@@ -38,6 +42,7 @@ class sorted_list {
 		 * which are explicitly listed due to the rule of five.
 		 */
 
+		mtx.lock();
 		sorted_list() = default;
 		sorted_list(const sorted_list<T>& other) = default;
 		sorted_list(sorted_list<T>&& other) = default;
@@ -48,6 +53,8 @@ class sorted_list {
 				remove(first->value);
 			}
 		}
+		mtx.unlock();
+
 		/* insert v into the list */
 		void insert(T v) {
 
