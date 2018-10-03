@@ -14,14 +14,15 @@ template<typename T>
 struct node
 {
     T value;
-    node<T>* next;/* critical section*/
+    node<T>* next;
 };
 
-/* non-concurrent sorted singly-linked list */
+/* thread-safe version of sorted singly-linked list */
+/* Coarse-grained locking with mutex */
 template<typename T>
 class sorted_list
 {
-    node<T>* first = nullptr;/* critical section*/
+    node<T>* first = nullptr;
 
 public:
     /* default implementations:
@@ -120,13 +121,11 @@ public:
     }
 
     /* count elements with value v in the list */
+    // count does not need locking
     std::size_t count(T v)
     {
         std::size_t cnt = 0;
         /* first go to value v */
-        dlog("inside count-lock operation");
-
-        mtx.lock();
         node<T>* current = first;
         while(current != nullptr && current->value < v)
         {
@@ -138,10 +137,7 @@ public:
             cnt++;
             current = current->next;
         }
-        mtx.unlock();
-         dlog("inside count-unlock operation");
         return cnt;
-
     }
 };
 

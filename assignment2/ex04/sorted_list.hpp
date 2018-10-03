@@ -1,27 +1,30 @@
 #ifndef lacpp_sorted_list_hpp
 #define lacpp_sorted_list_hpp lacpp_sorted_list_hpp
-#include <mutex>
+
+#include "TATASlock.hpp"
 #include "dlogger.hpp"
 
 /* a sorted list implementation by David Klaftenegger, 2015
  * please report bugs or suggest improvements to david.klaftenegger@it.uu.se
  */
 
-std::mutex mtx;
 
 /* struct for list nodes */
 template<typename T>
 struct node
 {
     T value;
-    node<T>* next;/* critical section*/
+    node<T>* next;
 };
 
-/* non-concurrent sorted singly-linked list */
+/* thread-safe version of sorted singly-linked list */
+/* Coarse-grained locking with TATAS lock */
 template<typename T>
 class sorted_list
 {
-    node<T>* first = nullptr;/* critical section*/
+    node<T>* first = nullptr;
+
+	TATASlock tlock;
 
 public:
     /* default implementations:
@@ -34,6 +37,7 @@ public:
      * The first is required due to the others,
      * which are explicitly listed due to the rule of five.
      */
+
     sorted_list() = default;
     sorted_list(const sorted_list<T>& other) = default;
     sorted_list(sorted_list<T>&& other) = default;
@@ -51,7 +55,7 @@ public:
     {
         /* first find position */
 
-        mtx.lock();
+        tlock.lock();
         dlog("inside insert-lock operation");
 
         node<T>* pred = nullptr;
@@ -68,8 +72,6 @@ public:
         current->value = v;
 
         /* insert new node between pred and succ */
-
-
         current->next = succ;
         if(pred == nullptr)
         {
@@ -79,7 +81,7 @@ public:
         {
             pred->next = current;
         }
-        mtx.unlock();
+        tlock.unlock();
         dlog("inside insert-unlock operation");
 
     }
@@ -87,7 +89,7 @@ public:
     void remove(T v)
     {
         /* first find position */
-        mtx.lock();
+        tlock.lock();
         dlog("inside remove-lock operation");
 
         node<T>* pred = nullptr;
@@ -99,7 +101,7 @@ public:
         }
         if(current == nullptr || current->value != v)
         {
-          mtx.unlock();
+           tlock.unlock();
         	dlog("inside remove-unlock operation");
             /* v not found */
             return;
@@ -114,7 +116,7 @@ public:
             pred->next = current->next;
         }
         delete current;
-        mtx.unlock();
+        tlock.unlock();
         dlog("inside remove-unlock operation");
 
     }
@@ -122,11 +124,10 @@ public:
     /* count elements with value v in the list */
     std::size_t count(T v)
     {
+        dlog("inside count operation");
         std::size_t cnt = 0;
         /* first go to value v */
-        dlog("inside count-lock operation");
 
-        mtx.lock();
         node<T>* current = first;
         while(current != nullptr && current->value < v)
         {
@@ -138,10 +139,7 @@ public:
             cnt++;
             current = current->next;
         }
-        mtx.unlock();
-         dlog("inside count-unlock operation");
         return cnt;
-
     }
 };
 
