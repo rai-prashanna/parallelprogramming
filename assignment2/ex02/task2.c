@@ -109,6 +109,15 @@ int main(int argc, char* argv[])
     unsigned int sqrt_num = (int) ceil(sqrt((double) NPRIMES));
     unsigned int leftnumbers= NPRIMES-sqrt_num;
     unsigned int equal_intervals=leftnumbers/NUM_THREADS;
+    if( argc == 2 )
+    {
+
+         NUM_THREADS = atoi(argv[1]);
+    }
+    else
+    {
+        printf("please supply arugments for number of threads");
+    }
 
     primes=init(primes,NPRIMES);
     filterPrimes(2,primes,sqrt_num);
