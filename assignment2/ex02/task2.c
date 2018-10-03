@@ -117,6 +117,7 @@ int main(int argc, char* argv[])
     else
     {
         printf("please supply arugments for number of threads");
+ 	exit(1);
     }
 
     primes=init(primes,NPRIMES);
