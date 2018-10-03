@@ -53,7 +53,6 @@ public:
         /* first find position */
 
         mtx.lock();
-        dlog("inside insert-lock operation");
 
         node<T>* pred = nullptr;
         node<T>* succ = first;
@@ -62,15 +61,12 @@ public:
             pred = succ;
             succ = succ->next;
         }
-        dlog("inside insert-unlock operation");
 
         /* construct new node */
         node<T>* current = new node<T>();
         current->value = v;
 
         /* insert new node between pred and succ */
-
-
         current->next = succ;
         if(pred == nullptr)
         {
@@ -81,15 +77,12 @@ public:
             pred->next = current;
         }
         mtx.unlock();
-        dlog("inside insert-unlock operation");
-
     }
 
     void remove(T v)
     {
         /* first find position */
         mtx.lock();
-        dlog("inside remove-lock operation");
 
         node<T>* pred = nullptr;
         node<T>* current = first;
@@ -101,7 +94,6 @@ public:
         if(current == nullptr || current->value != v)
         {
           mtx.unlock();
-        	dlog("inside remove-unlock operation");
             /* v not found */
             return;
         }
@@ -116,17 +108,16 @@ public:
         }
         delete current;
         mtx.unlock();
-        dlog("inside remove-unlock operation");
-
     }
 
     /* count elements with value v in the list */
     // count does not need locking
     std::size_t count(T v)
     {
+        mtx.lock();
+
         std::size_t cnt = 0;
 
-        mtx.lock();
         /* first go to value v */
         node<T>* current = first;
         while(current != nullptr && current->value < v)

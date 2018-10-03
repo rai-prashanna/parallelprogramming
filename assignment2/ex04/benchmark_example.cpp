@@ -70,15 +70,15 @@ int main(int argc, char* argv[]) {
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
 		}
-		std::cout << "\n " << "Begin read";
+		std::cout << "\n " << "Begin read" << std::endl;
 		benchmark(threadcnt, u8"non-thread-safe read", [&l1](int random){
 			read(l1, random);
 		});
-		std::cout << "\n " << "Begin update";
+		std::cout << "\n " << "Begin update" << std::endl;
 		benchmark(threadcnt, u8"non-thread-safe update", [&l1](int random){
 			update(l1, random);
 		});
-		std::cout << "\n " << "Done update";
+		std::cout << "\n " << "Done update" << std::endl;
 	}
 	{
 		/* start with fresh list: update test left list in random size */
