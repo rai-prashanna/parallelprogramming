@@ -6,14 +6,14 @@
 
 class TATASlock
 {
-
-    // Make atomic std::atomic_bool
+    // value must be atomic
     std::atomic<bool> value;
 
 public:
     // default constructor
     //TATASlock() = default;
     TATASlock() {
+        // No need for atomic operation in constructor
         value = false;
     }
 
@@ -21,20 +21,23 @@ public:
 
     void lock()
     {
-        while(getAndSet(true));
+        while(
+            //getAndSet(true)
+            value.exchange(true)
+        );
     }
 
     void unlock()
     {
-        value = false;
+        value.store(false);
     }
 
 private:
 
     bool getAndSet(bool newValue)
     {
-        bool prior = value;
-        value = newValue;
+        bool prior = value.load();
+        value.store(newValue);
         return prior;
     }
 

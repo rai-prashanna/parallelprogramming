@@ -4,7 +4,7 @@
 #include <iostream>
 #include <mutex>
 
-bool doprint = true;
+bool doprint = false;
 int min_level = 1;
 int default_level = 0;
 
