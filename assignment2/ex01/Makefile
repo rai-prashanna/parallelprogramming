@@ -7,4 +7,4 @@ all: ex1.cpp
  	g++ -std=c++11 -pthread ex1.cpp -o ex1
 
 clean:
-	$(RM) ex1
+	rm ex1
