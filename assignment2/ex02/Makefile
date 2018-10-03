@@ -1,3 +1,7 @@
+# Parallel programming
+# Assignment 2, exercise 2
+# Group 55
+# build an executable named task2
 CC = gcc
 CFLAGS=-Wall -pthread
 
