@@ -60,14 +60,12 @@ public:
         }
         std::cout<<"\n inside insert-unlock operation";
 
-        mtx.unlock();
         /* construct new node */
         node<T>* current = new node<T>();
         current->value = v;
 
         /* insert new node between pred and succ */
-        mtx.lock();
-        std::cout<<"\n inside insert-lock operation";
+
 
         current->next = succ;
         if(pred == nullptr)
@@ -99,6 +97,7 @@ public:
         if(current == nullptr || current->value != v)
         {
           mtx.unlock();
+              std::cout<<"\n inside remove-unlock operation"; 
             /* v not found */
             return;
         }
@@ -122,6 +121,8 @@ public:
     {
         std::size_t cnt = 0;
         /* first go to value v */
+        std::cout<<"\n inside count-lock operation";
+
         mtx.lock();
         node<T>* current = first;
         while(current != nullptr && current->value < v)
@@ -135,6 +136,7 @@ public:
             current = current->next;
         }
         mtx.unlock();
+         std::cout<<"\n inside count-unlock operation";
         return cnt;
 
     }
