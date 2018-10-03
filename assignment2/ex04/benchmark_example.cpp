@@ -22,8 +22,10 @@ void update(List& l, int random) {
 	/* update operations: 50% insert, 50% remove */
 	auto choice = (random % (2*DATA_VALUE_RANGE_MAX))/DATA_VALUE_RANGE_MAX;
 	if(choice == 0) {
+		std::cout << "\n " << "Inserting";
 		l.insert(random % DATA_VALUE_RANGE_MAX);
 	} else {
+		std::cout << "\n " << "Removing";
 		l.remove(random % DATA_VALUE_RANGE_MAX);
 	}
 }
@@ -33,10 +35,13 @@ void mixed(List& l, int random) {
 	/* mixed operations: 6.25% update, 93.75% count */
 	auto choice = (random % (32*DATA_VALUE_RANGE_MAX))/DATA_VALUE_RANGE_MAX;
 	if(choice == 0) {
+		std::cout << "\n " << "Inserting";
 		l.insert(random % DATA_VALUE_RANGE_MAX);
 	} else if(choice == 1) {
+		std::cout << "\n " << "Removing";
 		l.remove(random % DATA_VALUE_RANGE_MAX);
 	} else {
+		std::cout << "\n " << "Counting";
 		l.count(random % DATA_VALUE_RANGE_MAX);
 	}
 }
@@ -65,12 +70,15 @@ int main(int argc, char* argv[]) {
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
 		}
+		std::cout << "\n " << "Begin read";
 		benchmark(threadcnt, u8"non-thread-safe read", [&l1](int random){
 			read(l1, random);
 		});
+		std::cout << "\n " << "Begin update";
 		benchmark(threadcnt, u8"non-thread-safe update", [&l1](int random){
 			update(l1, random);
 		});
+		std::cout << "\n " << "Done update";
 	}
 	{
 		/* start with fresh list: update test left list in random size */
@@ -79,9 +87,11 @@ int main(int argc, char* argv[]) {
 		for(int i = 0; i < DATA_PREFILL; i++) {
 			l1.insert(uniform_dist(engine));
 		}
+		std::cout << "\n " << "Begin mixed";
 		benchmark(threadcnt, u8"non-thread-safe mixed", [&l1](int random){
 			mixed(l1, random);
 		});
 	}
+	std::cout << "\n " << "DONE";
 	return EXIT_SUCCESS;
 }

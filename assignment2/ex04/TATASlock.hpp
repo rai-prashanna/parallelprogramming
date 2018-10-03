@@ -8,7 +8,7 @@ class TATASlock
 {
 
     // Make atomic std::atomic_bool
-    std::atomic_bool value;
+    std::atomic<bool> value;
 
 public:
     // default constructor
@@ -26,7 +26,7 @@ public:
 
     void unlock()
     {
-        getAndSet(false);
+        value = false;
     }
 
 private:

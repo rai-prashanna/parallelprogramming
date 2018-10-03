@@ -4,10 +4,18 @@
 #include <iostream>
 #include <mutex>
 
-bool doprint = false;
+bool doprint = true;
+int min_level = 1;
+int default_level = 0;
 
 void dlog(const char* msg) {
-    if (doprint) {
+    if (doprint && default_level >= min_level) {
+        std::cout << "\n " << msg;
+    }
+}
+
+void dlog(const char* msg, int level) {
+    if (doprint && level >= min_level) {
         std::cout << "\n " << msg;
     }
 }

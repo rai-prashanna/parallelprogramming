@@ -81,9 +81,8 @@ public:
         {
             pred->next = current;
         }
+		dlog("inside insert-unlock operation");
         tlock.unlock();
-        dlog("inside insert-unlock operation");
-
     }
 
     void remove(T v)
@@ -101,8 +100,8 @@ public:
         }
         if(current == nullptr || current->value != v)
         {
+		   dlog("inside remove-unlock operation");
            tlock.unlock();
-        	dlog("inside remove-unlock operation");
             /* v not found */
             return;
         }
@@ -116,18 +115,19 @@ public:
             pred->next = current->next;
         }
         delete current;
+		dlog("inside remove-unlock operation");
         tlock.unlock();
-        dlog("inside remove-unlock operation");
 
     }
 
     /* count elements with value v in the list */
     std::size_t count(T v)
     {
-        dlog("inside count operation");
         std::size_t cnt = 0;
-        /* first go to value v */
 
+		tlock.lock();
+		dlog("inside count operation", 1);
+        /* first go to value v */
         node<T>* current = first;
         while(current != nullptr && current->value < v)
         {
@@ -139,6 +139,8 @@ public:
             cnt++;
             current = current->next;
         }
+		dlog("returning count operation", 1);
+		tlock.unlock();
         return cnt;
     }
 };

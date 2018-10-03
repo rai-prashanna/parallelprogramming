@@ -125,6 +125,8 @@ public:
     std::size_t count(T v)
     {
         std::size_t cnt = 0;
+
+        mtx.lock();
         /* first go to value v */
         node<T>* current = first;
         while(current != nullptr && current->value < v)
@@ -137,6 +139,7 @@ public:
             cnt++;
             current = current->next;
         }
+        mtx.unlock();
         return cnt;
     }
 };
