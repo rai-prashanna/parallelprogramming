@@ -1,5 +1,6 @@
 /*
 ex1.cpp
+Group 55
 2018-09-29
 g++ -std=c++11 -pthread ex1.cpp -o ex1.exe
 usage: ex1.exe T NT
