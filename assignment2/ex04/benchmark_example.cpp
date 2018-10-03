@@ -22,10 +22,10 @@ void update(List& l, int random) {
 	/* update operations: 50% insert, 50% remove */
 	auto choice = (random % (2*DATA_VALUE_RANGE_MAX))/DATA_VALUE_RANGE_MAX;
 	if(choice == 0) {
-		std::cout << "\n " << "Inserting";
+		//std::cout << "\n " << "Inserting";
 		l.insert(random % DATA_VALUE_RANGE_MAX);
 	} else {
-		std::cout << "\n " << "Removing";
+		//std::cout << "\n " << "Removing";
 		l.remove(random % DATA_VALUE_RANGE_MAX);
 	}
 }
@@ -35,13 +35,13 @@ void mixed(List& l, int random) {
 	/* mixed operations: 6.25% update, 93.75% count */
 	auto choice = (random % (32*DATA_VALUE_RANGE_MAX))/DATA_VALUE_RANGE_MAX;
 	if(choice == 0) {
-		std::cout << "\n " << "Inserting";
+		//std::cout << "\n " << "Inserting";
 		l.insert(random % DATA_VALUE_RANGE_MAX);
 	} else if(choice == 1) {
-		std::cout << "\n " << "Removing";
+		//std::cout << "\n " << "Removing";
 		l.remove(random % DATA_VALUE_RANGE_MAX);
 	} else {
-		std::cout << "\n " << "Counting";
+		//std::cout << "\n " << "Counting";
 		l.count(random % DATA_VALUE_RANGE_MAX);
 	}
 }
