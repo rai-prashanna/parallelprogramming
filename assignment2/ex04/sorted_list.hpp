@@ -1,13 +1,13 @@
 #ifndef lacpp_sorted_list_hpp
 #define lacpp_sorted_list_hpp lacpp_sorted_list_hpp
-
-#include "TATASlock.hpp"
+#include <mutex>
 #include "dlogger.hpp"
 
 /* a sorted list implementation by David Klaftenegger, 2015
  * please report bugs or suggest improvements to david.klaftenegger@it.uu.se
  */
 
+std::mutex mtx;
 
 /* struct for list nodes */
 template<typename T>
@@ -18,13 +18,11 @@ struct node
 };
 
 /* thread-safe version of sorted singly-linked list */
-/* Fine-grained locking with TATAS lock */
+/* Coarse-grained locking with mutex */
 template<typename T>
 class sorted_list
 {
     node<T>* first = nullptr;
-
-	TATASlock tlock;
 
 public:
     /* default implementations:
@@ -37,7 +35,6 @@ public:
      * The first is required due to the others,
      * which are explicitly listed due to the rule of five.
      */
-
     sorted_list() = default;
     sorted_list(const sorted_list<T>& other) = default;
     sorted_list(sorted_list<T>&& other) = default;
@@ -53,9 +50,10 @@ public:
     /* insert v into the list */
     void insert(T v)
     {
-        tlock.lock();
-
         /* first find position */
+
+        mtx.lock();
+
         node<T>* pred = nullptr;
         node<T>* succ = first;
         while(succ != nullptr && succ->value < v)
@@ -78,14 +76,14 @@ public:
         {
             pred->next = current;
         }
-        tlock.unlock();
+        mtx.unlock();
     }
 
     void remove(T v)
     {
-        tlock.lock();
-
         /* first find position */
+        mtx.lock();
+
         node<T>* pred = nullptr;
         node<T>* current = first;
         while(current != nullptr && current->value < v)
@@ -95,7 +93,7 @@ public:
         }
         if(current == nullptr || current->value != v)
         {
-           tlock.unlock();
+          mtx.unlock();
             /* v not found */
             return;
         }
@@ -109,15 +107,16 @@ public:
             pred->next = current->next;
         }
         delete current;
-        tlock.unlock();
+        mtx.unlock();
     }
 
     /* count elements with value v in the list */
+    // count does not need locking
     std::size_t count(T v)
     {
-        std::size_t cnt = 0;
+        mtx.lock();
 
-        tlock.lock();
+        std::size_t cnt = 0;
 
         /* first go to value v */
         node<T>* current = first;
@@ -131,7 +130,7 @@ public:
             cnt++;
             current = current->next;
         }
-		tlock.unlock();
+        mtx.unlock();
         return cnt;
     }
 };
