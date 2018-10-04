@@ -3,6 +3,7 @@
 # Group 55
 # usage: ex2 number_of_threads
 # build an executable named ex2 from ex2.c
+
 CC = gcc
 CFLAGS=-Wall -pthread
 

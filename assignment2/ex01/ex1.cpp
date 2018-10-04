@@ -31,22 +31,12 @@ void calcArea(int tn, int num_threads, int num_trapezes, double step) {
     // Calculates a rectangle area and adds the subtotal to shared_sum
     mutex.lock();
     std::cout << "Task " << tn << " is running" << std::endl;
-    //std::cout << "Task " << tn << " is running with startidx " << startidx << std::endl;
     mutex.unlock();
 
   int i;
    double x, sum = 0.0;
   
     for(i=tn; i < num_trapezes; i+=num_threads) {
-      /*x1 = i;
-      x2 = i + step;
-      sum = sum + ((x1 + x2)/2.0);*/
-
-      //mutex.lock();
-      //std::cout << "i " << i << ", num_trapezes " << num_trapezes << ", num_threads " << num_threads << std::endl;
-      //mutex.unlock();
-
-      //x = (startidx + i+0.5)*step;
       x = (i+0.5)*step;
       sum = sum + 4.0/(1.0+x*x);
     }
@@ -125,20 +115,16 @@ int main(int argc, char *argv[])
     // *** timing begins here ***
     auto start_time = std::chrono::system_clock::now();
 
-    // Now calculate the areas
-    // Area of each trapeze given by ( f(x2)+f(x1)/2 ) * step
     // To parallelize this, use a round robin for the threads
     
    // create and join threads
    std::thread *t = new std::thread[num_threads];
 
     step = 1.0/num_trapezes;
-    //int num_trapezes_per_thread = num_trapezes/num_threads;
 
     for (int i=0; i<num_threads; ++i)
     {
       // call void calcArea(int tn, int startidx, int num_trapezes_per_thread, double step)
-      //int startidx = i * num_trapezes_per_thread;
         t[i] = std::thread(calcArea, i, num_threads, num_trapezes, step);
     }
 
