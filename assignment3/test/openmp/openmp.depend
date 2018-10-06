@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1538775449 source:/home/morpheus/workspace-parallel-programming/assignment3/test/openmp/main.c
+	<stdio.h>
+	<stdlib.h>
+	<omp.h>
+
