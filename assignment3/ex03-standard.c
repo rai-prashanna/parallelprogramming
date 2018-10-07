@@ -22,12 +22,12 @@ int main()
 
 
         // initialize distances
-    mat[0][1] = 3;
-    mat[0][2] = 8;
-    mat[1][3] = 1;
-    mat[2][1] = 4;
-    mat[3][0] = 2;
-    mat[3][2] = -5;
+    mat[0][1] = rand() % 6;
+    mat[0][2] = rand() % 8;
+    mat[1][3] = rand() % 5;
+    mat[2][1] = rand() % 9;
+    mat[3][0] = rand() % 3;
+    mat[3][2] = rand() % 5 -3;
 
     printf("The entered matrix is : \n");
     for(i = 0; i < size; i++)
