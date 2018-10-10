@@ -29,30 +29,9 @@ tile getWestTile(tile cr);
 tile getNorthTile(tile cr);
 tile getSouthTile(tile cr);
 void printTile(tile cr);
-void usage();
 
-int main (int argc, char *argv[])
+int main()
 {
-    int n;
-
-    if (argc != 2)
-    {
-      usage();
-    }
-
-    if (argc == 2)
-    {
-        if(argv[1] == "-h") {
-            usage();
-        }
-        else {
-           n = atoi(argv[1]);
-        }
-    }
-
-    printf("Running with size matrix = %d\n\n", n);
-
-    //int D_matrix[n][n];
     int D_matrix[MATRIX_SIZE][MATRIX_SIZE];
 
     initMatrix(D_matrix);
@@ -218,12 +197,4 @@ void displayMatrix(const int mtx[MATRIX_SIZE][MATRIX_SIZE]) {
             printf("Value at cell i %d, j %d is: ",i, j, &mtx[i][j]);
         }
     }
-}
-
-void usage()
-{
-  //printf("Usage: %d N\n", program);
-  //printf("  N: size of matrix\n");
-  printf("please supply arugment for size of matrix");
-  exit(1);
 }
