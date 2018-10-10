@@ -12,18 +12,18 @@ typedef struct {
 #define INIT_NULL_TILE(X) tile X = {.id = 0, .offset_i = -1, .offset_j = -1};
 
 
-//const int MATRIX_SIZE = 4;
 const int MAX_RAND = 101; // If 101, we use infinity
 const int INFINITY = 9999;
-const int B_TILE_SIZE = 2;
+const int B_TILE_SIZE = 4;
 int * pInt = NULL;
 tile NULL_TILE = {0 , -1, -1};
 
 void initMatrix(int **mtx, int size);
 //void displayMatrix(const int mtx[MATRIX_SIZE][MATRIX_SIZE]);
 void prettyPrintMatrix(int **mtx, int size);
+void floydWarshallTiled(int **mtx, int size);
+void floydWarshallCore(int **mtx, int size, tile t);
 void floydWarshallStandard(int **mtx, int size);
-void floydWarshall(int **mtx, int size, int num_tiles);
 tile getEastTile(tile cr, int size);
 tile getWestTile(tile cr, int size);
 tile getNorthTile(tile cr, int size);
@@ -50,7 +50,8 @@ int main (int argc, char *argv[])
         }
     }
 
-    printf("Running with size matrix = %d\n\n", n_mtxsize);
+    printf("Running with size matrix = %d\n", n_mtxsize);
+    printf("Tiled version with B tile size = %d\n\n", B_TILE_SIZE);
 
     int **D_matrix;
     //int D_matrix[MATRIX_SIZE][MATRIX_SIZE];
@@ -59,29 +60,68 @@ int main (int argc, char *argv[])
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
 
-    floydWarshallStandard(D_matrix, n_mtxsize);
+    floydWarshallTiled(D_matrix, n_mtxsize);
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
-
-    /*tile cr_tile = {
-        .id = 1,
-        .offset_i = 2,
-        .offset_j = 3
-    };
-
-    tile easttile = getEastTile(cr_tile);
-    tile westtile = getWestTile(cr_tile);
-    tile northtile = getNorthTile(cr_tile);
-    tile southtile = getSouthTile(cr_tile);
-
-    printTile(easttile);
-    printTile(westtile);
-    printTile(northtile);
-    printTile(southtile);*/
     
     free(D_matrix);
 
     return 0;
+}
+
+void floydWarshallTiled(int **mtx, int size) {
+    // In k=0, we set the edge costs
+    // n step B: skip every B-tile size
+    for (int k=1; k<size; k=k+B_TILE_SIZE) {
+        printf("Now on k = %d\n", k);
+        // CR tile
+        tile cr_tile = {
+            .id = 1,
+            .offset_i = 2,
+            .offset_j = 3
+        };
+        floydWarshallCore(mtx, B_TILE_SIZE, cr_tile);
+
+        // E, W, N, S tiles
+        tile t = getEastTile(cr_tile, size);
+        floydWarshallCore(mtx, B_TILE_SIZE, t);
+
+        t = getWestTile(cr_tile, size);
+        floydWarshallCore(mtx, B_TILE_SIZE, t);
+
+        t = getNorthTile(cr_tile, size);
+        floydWarshallCore(mtx, B_TILE_SIZE, t);
+
+        t = getSouthTile(cr_tile, size);
+        floydWarshallCore(mtx, B_TILE_SIZE, t);
+
+        // TODO: NE, NW, SE, SW tiles
+
+    }
+}
+
+void floydWarshallCore(int **mtx, int size, tile t) {
+    // This needs to operate on just the tile block of the matrix
+    // size is now the block tile size, not the matrix size
+    for (int k=1; k<size; k++) {
+        printf("  floydWarshallCore now k = %d\n", k);
+        for(int j=1; j<size; ++j) {
+            for(int i=1; i<size; ++i) { 
+                // Set mtx[i][j] for k+1 to the minimum
+                // can skip where i=j
+                if (i==j)  continue;
+
+                int tmpcost = mtx[i][k] + mtx[k][j];
+                if (tmpcost < mtx[i][j]) {
+                    printf("Changing cost from %d to %d\n", mtx[i][k], tmpcost);
+                    mtx[i][j] = tmpcost;
+                }
+                else {
+                    printf("Keeping current cost at %d\n", mtx[i][j]);
+                }
+            }
+        }
+    }
 }
 
 void floydWarshallStandard(int **mtx, int size) {
@@ -105,19 +145,6 @@ void floydWarshallStandard(int **mtx, int size) {
             }
         }
         prettyPrintMatrix(mtx, size);
-    }
-}
-
-void floydWarshall(int **mtx, int size, int num_tiles) {
-    // k = current block iteration
-    for (int k=0; k<num_tiles; k++) {
-        for(int j=0; j<B_TILE_SIZE; ++j) {
-            for(int i=0; i<B_TILE_SIZE; ++i) { 
-                // Set mtx[i][j] for k+1 to the minimum
-                ///if (mtx[i][j] =
-                ///mtx[i][j] =
-            }
-        }
     }
 }
 
