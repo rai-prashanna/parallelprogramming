@@ -7,6 +7,16 @@
 #include <unistd.h>
 #include <omp.h>
 
+typedef unsigned long long timestamp_t;
+
+static timestamp_t
+    get_timestamp ()
+    {
+      struct timeval now;
+      gettimeofday (&now, NULL);
+      return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+    }
+
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 long int NPRIMES=10000000;
@@ -128,7 +138,21 @@ void *serialfilterPrimes(long startingindex,long *primes,long maxlimit)
 int main(int argc, char* argv[])
 {
     long* primes;
-    int NUM_THREADS=1;
+    int NUM_THREADS;
+    //int NUM_THREADS=1;
+
+    if( argc == 2 )
+    {
+         NUM_THREADS = atoi(argv[1]);
+    }
+    else
+    {
+        printf("please supply arugments for number of threads\n");
+ 	    exit(1);
+    }
+
+    printf("Using %d threads with max = %ld \n", NUM_THREADS, NPRIMES);
+
     pthread_t threads[NUM_THREADS]; /* An array of the threads. */
     struct thread_arg_t args[NUM_THREADS]; /* One argument struct per thread. */
     primes = (long*)malloc(NPRIMES * sizeof(long));
@@ -138,12 +162,17 @@ int main(int argc, char* argv[])
 
     primes=parallelinit(primes,NPRIMES);
 
+    timestamp_t t0 = get_timestamp();
+
     parallelfilterPrimes(2,primes,NPRIMES);
+
+    primes=args[0].primes;
+    timestamp_t t1 = get_timestamp();
+    double secs = (t1 - t0) / 1000000.0L;
 
     displayPrimeNumbers(primes,NPRIMES);
 
+    printf("execution time is   %lf \n",secs );
+
     return 0;
-
 }
-
-
