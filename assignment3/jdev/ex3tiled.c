@@ -1,6 +1,7 @@
 // gcc ex3tiled.c -o ex3tiled
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <time.h>
 
 typedef struct {
@@ -16,7 +17,7 @@ const int MAX_RAND = 101; // If 101, we use infinity
 const int INFINITY = 9999;
 const int B_TILE_SIZE = 4;
 int * pInt = NULL;
-tile NULL_TILE = {0 , -1, -1};
+tile NULL_TILE = {-1, -1, -1};
 
 void initMatrix(int **mtx, int size);
 //void displayMatrix(const int mtx[MATRIX_SIZE][MATRIX_SIZE]);
@@ -29,6 +30,7 @@ tile getWestTile(tile cr, int size);
 tile getNorthTile(tile cr, int size);
 tile getSouthTile(tile cr, int size);
 void printTile(tile cr);
+bool isNullTile(tile t);
 void usage();
 
 int main (int argc, char *argv[])
@@ -77,23 +79,31 @@ void floydWarshallTiled(int **mtx, int size) {
         // CR tile
         tile cr_tile = {
             .id = 1,
-            .offset_i = 2,
-            .offset_j = 3
+            .offset_i = 0,  // B_TILE_SIZE
+            .offset_j = 0   // B_TILE_SIZE
         };
         floydWarshallCore(mtx, B_TILE_SIZE, cr_tile);
 
         // E, W, N, S tiles
         tile t = getEastTile(cr_tile, size);
-        floydWarshallCore(mtx, B_TILE_SIZE, t);
+        if (!isNullTile(t)) {
+            floydWarshallCore(mtx, B_TILE_SIZE, t);
+        }
 
         t = getWestTile(cr_tile, size);
-        floydWarshallCore(mtx, B_TILE_SIZE, t);
-
+        if (!isNullTile(t)) {
+            floydWarshallCore(mtx, B_TILE_SIZE, t);
+        }
+        
         t = getNorthTile(cr_tile, size);
-        floydWarshallCore(mtx, B_TILE_SIZE, t);
+        if (!isNullTile(t)) {
+            floydWarshallCore(mtx, B_TILE_SIZE, t);
+        }
 
         t = getSouthTile(cr_tile, size);
-        floydWarshallCore(mtx, B_TILE_SIZE, t);
+        if (!isNullTile(t)) {
+            floydWarshallCore(mtx, B_TILE_SIZE, t);
+        }
 
         // TODO: NE, NW, SE, SW tiles
 
@@ -101,12 +111,15 @@ void floydWarshallTiled(int **mtx, int size) {
 }
 
 void floydWarshallCore(int **mtx, int size, tile t) {
-    // This needs to operate on just the tile block of the matrix
+    // size = tile size (not matrix size)
+    // todo: This needs to operate on just the tile block of the matrix
     // size is now the block tile size, not the matrix size
+    int maxtile_j = t.offset_j+size;
+    int maxtile_i = t.offset_i+size;
     for (int k=1; k<size; k++) {
         printf("  floydWarshallCore now k = %d\n", k);
-        for(int j=1; j<size; ++j) {
-            for(int i=1; i<size; ++i) { 
+        for(int j=t.offset_j; j<maxtile_j; ++j) {
+            for(int i=t.offset_i; i<maxtile_i; ++i) { 
                 // Set mtx[i][j] for k+1 to the minimum
                 // can skip where i=j
                 if (i==j)  continue;
@@ -244,6 +257,12 @@ void prettyPrintMatrix(int **mtx, int size) {
         }
     }
     printf("\n");
+}
+bool isNullTile(tile t) {
+    if (t.id == -1) {
+        return true;
+    }
+    return false;
 }
 
 void usage()
