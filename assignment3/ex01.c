@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -10,12 +11,12 @@
 typedef unsigned long long timestamp_t;
 
 static timestamp_t
-    get_timestamp ()
-    {
-      struct timeval now;
-      gettimeofday (&now, NULL);
-      return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
-    }
+get_timestamp ()
+{
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
 
 
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -64,6 +65,17 @@ void displayPrimeNumbers(long *primes,long NPRIMES)
     }
 }
 
+void displayNumbers(long *primes,long NPRIMES)
+{
+    printf("display all elements[] \n");
+
+    for(long i=2; i < NPRIMES; i++)
+    {
+        printf("Prime number: %ld\n", *(primes +i));
+
+    }
+}
+
 long *parallelinit(long *primes,long NPRIMES)
 {
     /* we start at 2 because it is the smallest prime */
@@ -99,32 +111,14 @@ void *parallelfilterPrimes(long startingindex,long *primes,long maxlimit)
     startingindex=getNextPrime(startingindex, primes);
     for(long i=startingindex; i <= maxlimit; i = nextindex)
     {
-        #pragma omp parallel for default(none) firstprivate(i,NPRIMES) shared(primes) schedule (dynamic)
+        #pragma omp parallel for firstprivate(i,NPRIMES) shared(primes) schedule (dynamic)
         for(long j = (i*2); j <= NPRIMES; j += i)
         {
 
-            *(primes +j) = 0;
-
-        }
-        nextindex=getNextPrime(i+1,primes);
-
-
-    }
-
-}
-
-void *serialfilterPrimes(long startingindex,long *primes,long maxlimit)
-{
-    /*make iterations from 2 to NPRIMES and update counter with next prime number*/
-    int nextindex=startingindex;
-    startingindex=getNextPrime(startingindex, primes);
-    for(long i=startingindex; i <= maxlimit; i = nextindex)
-    {
-        #pragma omp parallel for default(none) firstprivate(i,NPRIMES) shared(primes) schedule (dynamic)
-        for(long j = (i*2); j <= NPRIMES; j += i)
-        {
-
-            *(primes +j) = 0;
+            #pragma omp critical
+            {
+                *(primes +j) = 0;
+            }
 
         }
         nextindex=getNextPrime(i+1,primes);
@@ -139,7 +133,6 @@ int main(int argc, char* argv[])
 {
     long* primes;
     int NUM_THREADS;
-    //int NUM_THREADS=1;
 
     if( argc == 2 )
     {
@@ -150,6 +143,8 @@ int main(int argc, char* argv[])
         printf("please supply arugments for number of threads\n");
  	    exit(1);
     }
+
+//    NUM_THREADS=4;
 
     printf("Using %d threads with max = %ld \n", NUM_THREADS, NPRIMES);
 
@@ -165,12 +160,10 @@ int main(int argc, char* argv[])
     timestamp_t t0 = get_timestamp();
 
     parallelfilterPrimes(2,primes,NPRIMES);
-
-    primes=args[0].primes;
+    displayPrimeNumbers(primes,NPRIMES);
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
 
-    displayPrimeNumbers(primes,NPRIMES);
 
     printf("execution time is   %lf \n",secs );
 
