@@ -1,5 +1,5 @@
 // A tiled version of FW
-// gcc -Wall ex3tiled.c -o ex3tiled
+// gcc -Wall ex3-tiled.c -o ex3-tiled
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -26,14 +26,10 @@ int * pInt = NULL;
 
 int ** initMatrix(int **mtx, int size);
 void prettyPrintMatrix(int **mtx, int size);
-void floydWarshallTiled(int **mtx, int size);
+void floydWarshallTiledSerial(int **mtx, int size);
 void floydWarshallTileCore(int **mtx, int size, int k);
-//void floydWarshallCore(int **mtx, int size, tile t);
-void floydWarshallStandard(int **mtx, int size);
 int ** initNextMatrix(int **mtx, int size, int **frommtx);
 void copyMatrixValues(int **frommtx, int **tomtx, int size);
-//int ** copyDMatrix(int **frommtx, int **tomtx, int size);
-//bool isNullTile(tile t);
 void usage();
 
 int main (int argc, char *argv[])
@@ -72,7 +68,7 @@ int main (int argc, char *argv[])
     printf("Init the next k+1 matrix done. Here it is:\n");
     prettyPrintMatrix(D_matrix_nextk, n_mtxsize);
 
-    floydWarshallTiled(D_matrix, n_mtxsize);
+    floydWarshallTiledSerial(D_matrix, n_mtxsize);
     printf("floydWarshallTiled done\n");
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
@@ -85,7 +81,7 @@ int main (int argc, char *argv[])
     return 0;
 }
 
-void floydWarshallTiled(int **mtx, int size) {
+void floydWarshallTiledSerial(int **mtx, int size) {
     // In k=0, we set the edge costs
     // n step B: skip every B-tile size
     for (int k=0; k<size; k=k+B_TILE_SIZE) {
@@ -126,7 +122,6 @@ void floydWarshallTiled(int **mtx, int size) {
         }
 
         // TODO: NE, NW, SE, SW tiles
-
     }
 }
 
@@ -140,37 +135,13 @@ void floydWarshallTileCore(int **mtx, int size, int k) {
 
             int tmpcost = mtx[i][k] + mtx[k][j];
             if (tmpcost < mtx[i][j]) {
-                printf("Changing cost from %d to %d\n", mtx[i][j], tmpcost);
+                //printf("Changing cost from %d to %d\n", mtx[i][j], tmpcost);
                 mtx[i][j] = tmpcost;
             }
             else {
-                printf("Keeping current cost at %d\n", mtx[i][j]);
+                //printf("Keeping current cost at %d\n", mtx[i][j]);
             }
         }
-    }
-}
-
-void floydWarshallStandard(int **mtx, int size) {
-    // In k=0, we set the edge costs
-    for (int k=1; k<size; k++) {
-        printf("Now on k = %d\n", k);
-        for(int j=1; j<size; ++j) {
-            for(int i=1; i<size; ++i) {
-                // Set mtx[i][j] for k+1 to the minimum
-                // can skip where i=j
-                if (i==j)  continue;
-
-                int tmpcost = mtx[i][k] + mtx[k][j];
-                if (tmpcost < mtx[i][j]) {
-                    printf("Changing cost from %d to %d\n", mtx[i][k], tmpcost);
-                    mtx[i][j] = tmpcost;
-                }
-                else {
-                    printf("Keeping current cost at %d\n", mtx[i][j]);
-                }
-            }
-        }
-        //prettyPrintMatrix(mtx, size);
     }
 }
 
