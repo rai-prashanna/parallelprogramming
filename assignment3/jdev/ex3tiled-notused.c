@@ -12,10 +12,13 @@ typedef struct {
 
 //#define INIT_NULL_TILE(X) tile X = {.id = -1, .offset_i = -1, .offset_j = -1};
 
+#define CACHE_LINE_SIZE = 64;
+const int intsizebytes = 4;
+// Set tile size to a 4x4 matrix (64/4) = 16 integer values. So 4x4
+const int B_TILE_SIZE = 16;
 
 const int MAX_RAND = 101; // If 101, we use infinity
 const int INFINITY = 9999;
-const int B_TILE_SIZE = 4;
 int * pInt = NULL;
 tile NULL_TILE = {-1, -1, -1};
 
@@ -35,9 +38,11 @@ void usage();
 
 int main (int argc, char *argv[])
 {
+    int s = sizeof(int);
+
     int n_mtxsize=16;
 
- /*    if (argc != 2)
+    if (argc != 2)
     {
       usage();
     }
@@ -51,7 +56,7 @@ int main (int argc, char *argv[])
            n_mtxsize = atoi(argv[1]);
         }
     }
- */
+
     printf("Running with size matrix = %d\n", n_mtxsize);
     printf("Tiled version with B tile size = %d\n\n", B_TILE_SIZE);
 
@@ -87,8 +92,18 @@ void floydWarshallTiled(int **mtx, int size) {
         };
         floydWarshallCore(mtx, B_TILE_SIZE, cr_tile);
 
+        // Collect the tiles in E,W,N,S,NE,NW,SE,SW and parallelize with omp
+        int num_tiles = size / B_TILE_SIZE;
+        //tile tiles[num_tiles];
+
+        for(int tn=0; tn<num_tiles; num_tiles++) {
+            // TODO: Do not run the current tile
+            
+            floydWarshallCore(mtx, B_TILE_SIZE, t);
+        }
+
         // E, W, N, S tiles
-        tile t = getEastTile(cr_tile, size);
+        /*tile t = getEastTile(cr_tile, size);
         if (!isNullTile(t)) {
             floydWarshallCore(mtx, B_TILE_SIZE, t);
         }
@@ -109,7 +124,7 @@ void floydWarshallTiled(int **mtx, int size) {
         }
 
         // TODO: NE, NW, SE, SW tiles
-
+        */
     }
 }
 
@@ -224,11 +239,14 @@ void printTile(tile cr) {
 int ** initMatrix(int **mtx, int size) {
   int seed = time(NULL);
   srand(seed);
-    mtx = malloc(size*sizeof(int*));
+
+  mtx = aligned_alloc(16, size*sizeof(int*));
+  //mtx = malloc(size*sizeof(int*));
 
   for(int r=0; r<size; r++)
   {
-    mtx[r] = malloc(size*sizeof(int));
+    mtx[r] = aligned_alloc(16, size*sizeof(int*));
+    //mtx[r] = malloc(size*sizeof(int));
   }
   printf("After malloc row\n");
 
@@ -279,4 +297,3 @@ void usage()
   printf("please supply arugment for size of matrix");
   exit(1);
 }
-//
