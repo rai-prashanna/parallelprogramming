@@ -160,8 +160,10 @@ int main(int argc, char* argv[])
     timestamp_t t0 = get_timestamp();
 
     parallelfilterPrimes(2,primes,NPRIMES);
-    displayPrimeNumbers(primes,NPRIMES);
     timestamp_t t1 = get_timestamp();
+
+    displayPrimeNumbers(primes,NPRIMES);
+
     double secs = (t1 - t0) / 1000000.0L;
 
 
