@@ -17,11 +17,11 @@ typedef struct {
 #define CACHE_LINE_SIZE = 64;
 const int intsizebytes = 4;
 // Set tile size to a 4x4 matrix (64/4) = 16 integer values. So 4x4
-const int B_TILE_SIZE = 4;
+const int B_TILE_SIZE = 2;
 //const int B_TILE_SIZE = 16;
 
 const int MAX_RAND = 101; // If 101, we use infinity
-const int INFINITY = 9999;
+const int INFINITY_VAL = 9999;
 int * pInt = NULL;
 
 int ** initMatrix(int **mtx, int size);
@@ -102,13 +102,27 @@ void floydWarshallTiled(int **mtx, int size) {
 
         // TODO: E, W, N, S tiles
         // Is it better to collect tiles in array or like below? For parallelize?
+        int num_tiles_per_dim = size / B_TILE_SIZE;
+        
         int t_base_col_j = floor(k / size)*size;
-        int t_base_row_i = floor(k % B_TILE_SIZE)-1;
-        for (int t=t_base_col_j; t_base_col_j<t_base_col_j+B_TILE_SIZE; t=t+B_TILE_SIZE) {
+        int t_max_col_j = t_base_col_j+size-1;
+        
+        int t_base_row_i = floor(k % B_TILE_SIZE)-1;  // todo -1 should be 0
+        int t_max_row_i = t_base_row_i + (num_tiles_per_dim-1)*size;
+        
+        for (int t=t_base_col_j; t<t_max_col_j; t=t+B_TILE_SIZE) {
             // These iterates over E, W tiles
             // Skip cr tile
             if (t==k) continue;
-            printf("Would iterate over tiles with k %d\n", t);
+            printf("Would iterate over E, W tiles with k %d\n", t);
+            floydWarshallTileCore(mtx, size, k);
+        }
+
+        for (int t=t_base_row_i; t<t_max_row_i; t=t+size) {
+            // These iterates over N, S tiles
+            // Skip cr tile
+            if (t==k) continue;
+            printf("Would iterate over N, S tiles with k %d\n", t);
         }
 
         // TODO: NE, NW, SE, SW tiles
@@ -184,7 +198,7 @@ int ** initMatrix(int **mtx, int size) {
             int w = rand() % MAX_RAND;
 
             if (w==MAX_RAND) {
-                w=INFINITY;
+                w = INFINITY_VAL;
             }
 
             mtx[r][c] = w;
