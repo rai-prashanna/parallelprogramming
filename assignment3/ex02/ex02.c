@@ -1,131 +1,140 @@
-/*
-2 * A simple microbenchmark to observe the effects of caches
-3 * when walking through arrays of different sizes , either in
-4 * order or randomly .
-5 *
-6 * Written by Pontus Ekberg <pontus . ekberg@it .uu.se >
-7 * Last updated : 2018 -09 -26
-8 */
-# include <stdlib.h>
-# include <stdio.h>
-# include <time.h>
+/******************************************************
+ ************* Conway's game of life ******************
+ ******************************************************
 
-# define MIN_ELEMENTS (1 << 8) /* 2ˆ8 */
-# define MAX_ELEMENTS (1 << 21) /* 2ˆ21 */
-# define ITERATIONS_PER_TEST 100000000
+ Usage: ./exec ArraySize TimeSteps
 
-/* Return a uniformly random int in the range [0 , n -1]. */
+ Compile with -DOUTPUT to print output in output.gif
+ (You will need ImageMagick for that - Install with
+  sudo apt-get install imagemagick)
+ WARNING: Do not print output for large array sizes!
+          or multiple time steps!
+ ******************************************************/
 
-int rand_int ( int n)
-{
-    int limit = RAND_MAX - RAND_MAX % n;
-    int rnd ;
 
-    do
-    {
-        rnd = rand () ;
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
-    }
-    while ( rnd >= limit );
-    return rnd % n;
+#define FINALIZE "\
+convert -delay 20 out*.pgm output.gif\n\
+rm *pgm\n\
+"
 
+static int ** allocate_array(int N) {
+	int ** array;
+	int i, j;
+	array = malloc(N * sizeof(int*));
+	for (i = 0; i < N ; i++)
+		array[i] = malloc(N * sizeof(int));
+	for (i = 0; i < N ; i++)
+		for (j = 0; j < N ; j++)
+			array[i][j] = 0;
+	return array;
 }
 
-/* Randomly shuffle the elements of an array . */
-void shuffle ( int * array, size_t n)
-{
-    int i, j, tmp ;
-
-    for (i = n - 1; i > 0; i--)
-    {
-        j = rand_int (i + 1) ;
-        tmp = array [ j ];
-        array [j] = array [i ];
-        array [i] = tmp ;
-
-    }
-
+static void free_array(int ** array, int N) {
+	int i;
+	for (i = 0 ; i < N ; i++)
+		free(array[i]);
+	free(array);
 }
 
-/*
-42 * Create an array of <size > elements 0, 1, ... , size -1.
-43 * The elements are randomly arranged so that they create a
-44 * big cycle through all the elements if one follows them
-45 * by picking the next element index as the value of the
-46 * current element .
-47 */
-int * make_random_array ( size_t size )
-{
-    int * tmp_array = malloc ( size * sizeof ( int ));
-    int * array = malloc ( size * sizeof ( int ));
-    for (int i = 0; i < size ; i ++)
-    {
-        tmp_array [ i] = i;
+static void init_random(int ** array1, int ** array2, int N) {
+	int i, pos;
 
-    }
-    shuffle ( tmp_array, size );
+	for (i = 0 ; i < (N * N)/10 ; i++) {
+		pos = rand() % ((N-2)*(N-2));
+		array1[pos%(N-2)+1][pos/(N-2)+1] = 1;
+		array2[pos%(N-2)+1][pos/(N-2)+1] = 1;
 
-    int j;
-    for (int i = 0; i < size ; i ++)
-    {
-        j = tmp_array [ i ];
-        array [j] = tmp_array [( i +1) % size ];
-
-    }
-
-    free ( tmp_array );
-    return array ;
-
+	}
 }
 
-int * make_order_array ( size_t size )
-{
-    int * array = malloc ( size * sizeof ( int ));
-
-    for (int i = 0; i < size ; i ++)
-    {
-        array [i] = (i + 1) == size ? 0 : i + 1;
-
-    }
-
-    return array ;
+#ifdef OUTPUT
+static void print_to_pgm(int ** array, int N, int t) {
+	int i, j;
+	char * s = malloc(30*sizeof(char));
+	sprintf(s, "out%d.pgm", t);
+	FILE * f = fopen(s, "wb");
+	fprintf(f, "P5\n%d %d 1\n", N,N);
+	for (i = 0; i < N ; i++)
+		for (j = 0; j < N ; j++)
+			if (array[i][j] == 1)
+				fputc(1, f);
+			else
+				fputc(0, f);
+	fclose(f);
+	free(s);
 }
-/*
-77 * Chase data in an array by selecting the index of the next element
-78 * as the value of the current element .
-79 */
-void loop_scan_array (int * array, size_t size, int iterations )
-{
-    int index = 0;
-    for (int i = 0; i < iterations ; i ++)
-    {
-        index = array [ index ];
+#endif
 
-    }
-    return ;
+int main (int argc, char * argv[]) {
+	int N;	 			//array dimensions
+	int T; 				//time steps
+	int ** current, ** previous; 	//arrays - one for current timestep, one for previous timestep
+	int ** swap;			//array pointer
+	int t, i, j, nbrs;		//helper variables
 
-}
+	double time;			//variables for timing
+	struct timeval ts,tf;
 
-int main ()
-{
+	/*Read input arguments*/
+	if (argc != 3) {
+		fprintf(stderr, "Usage: ./exec ArraySize TimeSteps\n");
+		exit(-1);
+	}
+	else {
+		N = atoi(argv[1]);
+		T = atoi(argv[2]);
+	}
 
-    /* Time chasing of data in random matrices of different sizes . */
-    for ( size_t size = MIN_ELEMENTS ; size <= MAX_ELEMENTS ; size *= 2)
-    {
-        int * array = make_order_array ( size ) ;
+	/*Allocate and initialize matrices*/
+	current = allocate_array(N);			//allocate array for current time step
+	previous = allocate_array(N); 			//allocate array for previous time step
 
-        clock_t start = clock () ;
-        loop_scan_array ( array, size, ITERATIONS_PER_TEST );
-        clock_t end = clock () ;
+	init_random(previous, current, N);	//initialize previous array with pattern
 
-        free ( array );
+	#ifdef OUTPUT
+	print_to_pgm(previous, N, 0);
+	#endif
 
-        printf (" %5.2f seconds spent on chasing data in array of %4 zu KB\n",
-                ( double ) ( end - start ) / CLOCKS_PER_SEC,
-                size * sizeof ( int) / 1024) ;
+	/*Game of Life*/
 
-    }
+	gettimeofday(&ts,NULL);
+	for (t = 0 ; t < T ; t++) {
+        #pragma omp parallel for private(nbrs) collapse(2) shared(N,previous,current)
+		for (i = 1 ; i < N-1 ; i++)
+			for (j = 1 ; j < N-1 ; j++) {
+				nbrs = previous[i+1][j+1] + previous[i+1][j] + previous[i+1][j-1] \
+					+ previous[i][j-1] + previous[i][j+1] \
+					+ previous[i-1][j-1] + previous[i-1][j] + previous[i-1][j+1];
+					#pragma omp citical
+					{
+				if (nbrs == 3 || ( previous[i][j]+nbrs == 3))
+					current[i][j] = 1;
+				else
+					current[i][j] = 0;
+					}
+			}
 
-    return 0;
+		#ifdef OUTPUT
+		print_to_pgm(current, N, t+1);
+		#endif
+		//Swap current array with previous array
+		swap = current;
+		current = previous;
+		previous = swap;
 
+	}
+	gettimeofday(&tf,NULL);
+	time = (tf.tv_sec-ts.tv_sec)+(tf.tv_usec-ts.tv_usec)*0.000001;
+
+	free_array(current, N);
+	free_array(previous, N);
+	printf("GameOfLife: Size %d Steps %d Time %lf\n", N, T, time);
+	#ifdef OUTPUT
+	system(FINALIZE);
+	#endif
+	return 0;
 }
