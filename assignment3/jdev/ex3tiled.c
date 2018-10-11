@@ -19,7 +19,7 @@ const int B_TILE_SIZE = 4;
 int * pInt = NULL;
 tile NULL_TILE = {-1, -1, -1};
 
-void initMatrix(int **mtx, int size);
+int ** initMatrix(int **mtx, int size);
 //void displayMatrix(const int mtx[MATRIX_SIZE][MATRIX_SIZE]);
 void prettyPrintMatrix(int **mtx, int size);
 void floydWarshallTiled(int **mtx, int size);
@@ -58,7 +58,7 @@ int main (int argc, char *argv[])
     int ** D_matrix;
     //int D_matrix[MATRIX_SIZE][MATRIX_SIZE];
 
-    initMatrix(D_matrix, n_mtxsize);
+    D_matrix=initMatrix(D_matrix, n_mtxsize);
     printf("Init the marix done\n");
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
@@ -67,7 +67,7 @@ int main (int argc, char *argv[])
     printf("floydWarshallTiled done\n");
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
-    
+
     printf("Freeing resources\n");
     free(D_matrix);
 
@@ -97,7 +97,7 @@ void floydWarshallTiled(int **mtx, int size) {
         if (!isNullTile(t)) {
             floydWarshallCore(mtx, B_TILE_SIZE, t);
         }
-        
+
         t = getNorthTile(cr_tile, size);
         if (!isNullTile(t)) {
             floydWarshallCore(mtx, B_TILE_SIZE, t);
@@ -122,7 +122,7 @@ void floydWarshallCore(int **mtx, int size, tile t) {
     for (int k=1; k<size; k++) {
         printf("  floydWarshallCore now k = %d\n", k);
         for(int j=t.offset_j; j<maxtile_j; ++j) {
-            for(int i=t.offset_i; i<maxtile_i; ++i) { 
+            for(int i=t.offset_i; i<maxtile_i; ++i) {
                 // Set mtx[i][j] for k+1 to the minimum
                 // can skip where i=j
                 if (i==j)  continue;
@@ -145,7 +145,7 @@ void floydWarshallStandard(int **mtx, int size) {
     for (int k=1; k<size; k++) {
         printf("Now on k = %d\n", k);
         for(int j=1; j<size; ++j) {
-            for(int i=1; i<size; ++i) { 
+            for(int i=1; i<size; ++i) {
                 // Set mtx[i][j] for k+1 to the minimum
                 // can skip where i=j
                 if (i==j)  continue;
@@ -221,7 +221,7 @@ void printTile(tile cr) {
     printf("Tile id %d, offset_i %d, offset_j %d\n", cr.id, cr.offset_i, cr.offset_j);
 }
 
-void initMatrix(int **mtx, int size) {
+int ** initMatrix(int **mtx, int size) {
   int seed = time(NULL);
   srand(seed);
     mtx = malloc(size*sizeof(int*));
@@ -253,6 +253,7 @@ void initMatrix(int **mtx, int size) {
         }
     }
   }
+  return mtx;
 }
 void prettyPrintMatrix(int **mtx, int size) {
     for(int i=0; i<size; ++i) {
@@ -278,3 +279,4 @@ void usage()
   printf("please supply arugment for size of matrix");
   exit(1);
 }
+//
