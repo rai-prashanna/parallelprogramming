@@ -1,7 +1,7 @@
 # Parallel programming
 # Assignment 3, exercise 1
 # Group 105
-# usage: ex2 number_of_threads
+# usage: ex01 number_of_threads
 # build an executable named ex01 from ex01.c
 
 CC = gcc
