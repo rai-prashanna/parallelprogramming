@@ -10,7 +10,7 @@ typedef struct {
     int offset_j;
 } tile;
 
-#define INIT_NULL_TILE(X) tile X = {.id = 0, .offset_i = -1, .offset_j = -1};
+//#define INIT_NULL_TILE(X) tile X = {.id = -1, .offset_i = -1, .offset_j = -1};
 
 
 const int MAX_RAND = 101; // If 101, we use infinity
@@ -35,9 +35,9 @@ void usage();
 
 int main (int argc, char *argv[])
 {
-    int n_mtxsize;
+    int n_mtxsize=16;
 
-    if (argc != 2)
+ /*    if (argc != 2)
     {
       usage();
     }
@@ -51,21 +51,24 @@ int main (int argc, char *argv[])
            n_mtxsize = atoi(argv[1]);
         }
     }
-
+ */
     printf("Running with size matrix = %d\n", n_mtxsize);
     printf("Tiled version with B tile size = %d\n\n", B_TILE_SIZE);
 
-    int **D_matrix;
+    int ** D_matrix;
     //int D_matrix[MATRIX_SIZE][MATRIX_SIZE];
 
     initMatrix(D_matrix, n_mtxsize);
+    printf("Init the marix done\n");
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
 
     floydWarshallTiled(D_matrix, n_mtxsize);
+    printf("floydWarshallTiled done\n");
 
     prettyPrintMatrix(D_matrix, n_mtxsize);
     
+    printf("Freeing resources\n");
     free(D_matrix);
 
     return 0;
@@ -157,7 +160,7 @@ void floydWarshallStandard(int **mtx, int size) {
                 }
             }
         }
-        prettyPrintMatrix(mtx, size);
+        //prettyPrintMatrix(mtx, size);
     }
 }
 
@@ -221,15 +224,18 @@ void printTile(tile cr) {
 void initMatrix(int **mtx, int size) {
   int seed = time(NULL);
   srand(seed);
+    mtx = malloc(size*sizeof(int*));
 
   for(int r=0; r<size; r++)
   {
-    mtx[r] = (int*)malloc(size*sizeof(int));
+    mtx[r] = malloc(size*sizeof(int));
   }
+  printf("After malloc row\n");
 
   // Set the random values
   for(int r=0; r<size; r++)
   {
+    printf("In row loop, setting %d \n", r);
     for(int c=0; c<size; c++)
     {
         if (r==c) {
