@@ -122,14 +122,13 @@ int main(int argc, char* argv[])
  	    exit(1);
     }
 
-//    NUM_THREADS=4;
 
     printf("Using %d threads with max = %ld \n", NUM_THREADS, NPRIMES);
 
     primes = (long*)malloc(NPRIMES * sizeof(long));
-    unsigned long sqrt_num = (long) ceil(sqrt((double) NPRIMES));
-    unsigned long leftnumbers= NPRIMES-sqrt_num;
-    unsigned long equal_longervals=leftnumbers/NUM_THREADS;
+//    unsigned long sqrt_num = (long) ceil(sqrt((double) NPRIMES));
+//    unsigned long leftnumbers= NPRIMES-sqrt_num;
+//    unsigned long equal_longervals=leftnumbers/NUM_THREADS;
 
     primes=parallelinit(primes,NPRIMES);
 
