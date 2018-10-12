@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 void floydserial(int **current, int num, int **previous);
 void floydparallel(int **current, int num, int **previous);
@@ -7,7 +8,7 @@ void floydparallel(int **current, int num, int **previous);
 
 int main()
 {
-    int size = 16, i = 0, j = 0, **previous = NULL,**current=NULL;
+    int size = 2048, i = 0, j = 0, **previous = NULL,**current=NULL;
     const int MAX_RAND = 101; // If 101, we use infinity
     const int INFINITY = 9999;
     previous = (int**)malloc(size * sizeof(int*));
@@ -70,12 +71,36 @@ int main()
 
 void floydparallel(int **current, int num, int **previous)
 {
-    int i = 0, j = 0, k = 0;
+    int i = 0, j = 0, k = 0,start_index,end_index,col_chunk_size,id=0;
     int **swap;
     for(k = 0; k < num; k++)
-        #pragma omp parallel for firstprivate(num) private(swap) collapse(2) shared(current,previous)
-        for(i = 0; i < num; i++)
-            for(j = 0; j < num; j++)
+        #pragma omp parallel firstprivate(num,k) default(none) private(i,j,swap,id,start_index,end_index) shared(current,previous,col_chunk_size) num_threads(32)
+    {
+
+        id = omp_get_thread_num();
+
+        int N_threads = omp_get_num_threads();
+        /* distribute cols to different threads */
+        col_chunk_size = num / N_threads;
+        if(id==0)
+        {
+            start_index=0;
+            end_index = col_chunk_size-1;
+        }
+        else
+        {
+            start_index = id * col_chunk_size;
+            end_index = (id+1) * col_chunk_size-1;
+
+        }
+
+        if (id == N_threads - 1)
+        {
+            end_index = num-1;
+        }
+        for(i = start_index; i < end_index; i++)
+        {
+            for(j = start_index; j < end_index; j++)
             {
                 {
                     if(i==j)
@@ -88,6 +113,9 @@ void floydparallel(int **current, int num, int **previous)
                     }
                 }
             }
+
+        }
+    }
 
 
     #pragma omp barrier
