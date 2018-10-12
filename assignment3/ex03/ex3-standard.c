@@ -1,15 +1,42 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
+#include <time.h>
+#include <omp.h>
+
+typedef unsigned long long timestamp_t;
+
+static timestamp_t
+get_timestamp ()
+{
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
 
 void floydserial(int **current, int num, int **previous);
 void floydparallel(int **current, int num, int **previous);
+void usage();
 
 
-int main()
+int main (int argc, char *argv[])
 {
-    int size = 16, i = 0, j = 0, **previous = NULL,**current=NULL;
     const int MAX_RAND = 101; // If 101, we use infinity
-    const int INFINITY = 9999;
+    const int INFINITY_VAL = 9999;
+
+    int size, i = 0, j = 0, **previous = NULL,**current=NULL;
+
+    if (argc != 2)
+    {
+        usage();
+    }
+
+    if (argc == 2)
+    {
+        size = atoi(argv[1]);
+    }
+    printf("Running with size matrix = %d\n", size);
+
     previous = (int**)malloc(size * sizeof(int*));
     current=(int**)malloc(size * sizeof(int*));
     for(i = 0; i < size; i++)
@@ -17,8 +44,11 @@ int main()
         previous[i] = malloc(size * sizeof(int));
         current[i] = malloc(size * sizeof(int));
     }
-    printf("Please enter the values for the distance previousrix of the directed graph. Enter 999 for infinity.\n");
+
     // Set the random values
+    int seed = time(NULL);
+    srand(seed);
+
     for(int r=0; r<size; r++)
     {
         for(int c=0; c<size; c++)
@@ -27,7 +57,6 @@ int main()
             {
                 previous[r][c] = 0;
                 current[r][c] = 0;
-
             }
             else
             {
@@ -36,7 +65,7 @@ int main()
 
                 if (w==MAX_RAND)
                 {
-                    w=INFINITY;
+                    w=INFINITY_VAL;
                 }
 
                 previous[r][c] = w;
@@ -45,8 +74,7 @@ int main()
         }
     }
 
-
-    printf("The entered previousrix is : \n");
+    printf("The original matrix is : \n");
     for(i = 0; i < size; i++)
     {
         for(j = 0; j < size; j++)
@@ -54,14 +82,24 @@ int main()
         printf("\n");
     }
 
+    timestamp_t t0 = get_timestamp();
+
     floydparallel(current, size,previous);
-    printf("The resultant all-pairs shortest-paths previousrix is : \n");
+
+    timestamp_t t1 = get_timestamp();
+
+    printf("The resultant all-pairs shortest-paths matrix is : \n");
     for(i = 0; i < size; i++)
     {
         for(j = 0; j < size; j++)
             printf("%d  ", current[i][j]);
         printf("\n");
     }
+
+    double secs = (t1 - t0) / 1000000.0L;
+
+    printf("execution time is   %lf \n",secs );
+
     free(previous);
     free(current);
 
@@ -98,7 +136,6 @@ void floydparallel(int **current, int num, int **previous)
 
     }
 
-
 }
 
 void floydserial(int **current, int num, int **previous)
@@ -121,6 +158,10 @@ void floydserial(int **current, int num, int **previous)
 
     }
 
-
 }
 
+void usage()
+{
+    printf("please supply argument for size of matrix\n");
+    exit(1);
+}
