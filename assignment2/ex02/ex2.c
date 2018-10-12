@@ -156,15 +156,13 @@ int main(int argc, char* argv[])
         pthread_join(threads[i], NULL);
     }
 
-
     primes=args[0].primes;
     timestamp_t t1 = get_timestamp();
-double secs = (t1 - t0) / 1000000.0L;
+    double secs = (t1 - t0) / 1000000.0L;
 
-printf("execution time is   %lf \n",secs );
     displayPrimeNumbers(primes,NPRIMES);
 
+    printf("execution time is   %lf \n",secs );
+
     return 0;
-
 }
-
