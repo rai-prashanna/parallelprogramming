@@ -1,9 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <sys/time.h>
+#include <time.h>
+
+typedef unsigned long long timestamp_t;
+
+static timestamp_t
+get_timestamp ()
+{
+    struct timeval now;
+    gettimeofday (&now, NULL);
+    return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
+}
 
 void floydserial(int **current, int num, int **previous);
 void floydparallel(int **current, int num, int **previous,int numthreads);
+void usage();
 
 
 int main(int argc, char *argv[])
@@ -17,12 +30,12 @@ int main(int argc, char *argv[])
         usage();
     }
 
-    if (argc == 2)
+    if (argc == 3)
     {
         size = atoi(argv[1]);
         numthreads=atoi(argv[2]);
-
     }
+    printf("Running standard version with size matrix = %d, number of threads=%d\n", size, numthreads);
 
     previous = (int**)malloc(size * sizeof(int*));
     current=(int**)malloc(size * sizeof(int*));
@@ -33,6 +46,9 @@ int main(int argc, char *argv[])
     }
 
     // Set the random values
+    int seed = time(NULL);
+    srand(seed);
+    
     for(int r=0; r<size; r++)
     {
         for(int c=0; c<size; c++)
@@ -59,23 +75,15 @@ int main(int argc, char *argv[])
         }
     }
 
-
-    printf("The entered previousrix is : \n");
-    for(i = 0; i < size; i++)
-    {
-        for(j = 0; j < size; j++)
-            printf("%d  ", previous[i][j]);
-        printf("\n");
-    }
+    timestamp_t t0 = get_timestamp();
 
     floydparallel(current, size,previous,numthreads);
-    printf("The resultant all-pairs shortest-paths previousrix is : \n");
-    for(i = 0; i < size; i++)
-    {
-        for(j = 0; j < size; j++)
-            printf("%d  ", current[i][j]);
-        printf("\n");
-    }
+
+    timestamp_t t1 = get_timestamp();
+    double secs = (t1 - t0) / 1000000.0L;
+
+    printf("execution time is   %lf \n",secs );
+
     free(previous);
     free(current);
 
@@ -165,11 +173,8 @@ void floydserial(int **current, int num, int **previous)
 
 }
 
-
 void usage()
 {
-    //printf("Usage: %d N\n", program);
-    //printf("  N: size of matrix\n");
-    printf("please supply argument for size of matrix and number of threads %d\n");
+    printf("please supply argument for size of matrix and number of threads.\n");
     exit(1);
 }
