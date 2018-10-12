@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
+#include <omp.h>
 #define FINALIZE "\
 convert -delay 20 out*.pgm output.gif\n\
 rm *pgm\n\
@@ -110,11 +110,34 @@ int main (int argc, char * argv[])
     /*Game of Life*/
 
     gettimeofday(&ts,NULL);
+    int  id, col_chunk_size, start_index, end_index;
+    int numofthreads=2;
     for (t = 0 ; t < T ; t++)
     {
-        #pragma omp parallel for private(nbrs) collapse(2) shared(N,previous,current)
-        for (i = 1 ; i < N-1 ; i++)
-            for (j = 1 ; j < N-1 ; j++)
+        #pragma omp parallel private(nbrs,id) shared(N,previous,current) num_threads(16)
+        id = omp_get_thread_num();
+        int N_threads = omp_get_num_threads();
+        /* distribute cols to different threads */
+        col_chunk_size = N-1 / N_threads;
+        if(id==0)
+        {
+            start_index=1;
+        }
+        else
+        {
+            start_index = id * col_chunk_size;
+        }
+        end_index = (id+1) * col_chunk_size;
+        if (id == N_threads - 1)
+        {
+            end_index = N-1;
+        }
+
+        omp_set_dynamic(0);
+        omp_set_num_threads(N_threads);
+
+        for (i = start_index; i < end_index ; i++)
+            for (j = start_index ; j < end_index ; j++)
             {
                 nbrs = previous[i+1][j+1] + previous[i+1][j] + previous[i+1][j-1] \
                        + previous[i][j-1] + previous[i][j+1] \
@@ -127,6 +150,7 @@ int main (int argc, char * argv[])
                         current[i][j] = 0;
                 }
             }
+
 
 #ifdef OUTPUT
         print_to_pgm(current, N, t+1);
