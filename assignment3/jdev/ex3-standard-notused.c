@@ -3,14 +3,27 @@
 #include <omp.h>
 
 void floydserial(int **current, int num, int **previous);
-void floydparallel(int **current, int num, int **previous);
+void floydparallel(int **current, int num, int **previous,int numthreads);
 
 
-int main()
+int main(int argc, char *argv[])
 {
     int size = 2048, i = 0, j = 0, **previous = NULL,**current=NULL;
     const int MAX_RAND = 101; // If 101, we use infinity
     const int INFINITY = 9999;
+    int numthreads=0;
+    if (argc != 3)
+    {
+        usage();
+    }
+
+    if (argc == 2)
+    {
+        size = atoi(argv[1]);
+        numthreads=atoi(argv[2]);
+
+    }
+
     previous = (int**)malloc(size * sizeof(int*));
     current=(int**)malloc(size * sizeof(int*));
     for(i = 0; i < size; i++)
@@ -18,7 +31,7 @@ int main()
         previous[i] = malloc(size * sizeof(int));
         current[i] = malloc(size * sizeof(int));
     }
-    printf("Please enter the values for the distance previousrix of the directed graph. Enter 999 for infinity.\n");
+
     // Set the random values
     for(int r=0; r<size; r++)
     {
@@ -55,7 +68,7 @@ int main()
         printf("\n");
     }
 
-    floydparallel(current, size,previous);
+    floydparallel(current, size,previous,numthreads);
     printf("The resultant all-pairs shortest-paths previousrix is : \n");
     for(i = 0; i < size; i++)
     {
@@ -69,12 +82,12 @@ int main()
     return 0;
 }
 
-void floydparallel(int **current, int num, int **previous)
+void floydparallel(int **current, int num, int **previous,int numthreads)
 {
     int i = 0, j = 0, k = 0,start_index,end_index,col_chunk_size,id=0;
     int **swap;
     for(k = 0; k < num; k++)
-        #pragma omp parallel firstprivate(num,k) default(none) private(i,j,swap,id,start_index,end_index) shared(current,previous,col_chunk_size) num_threads(32)
+        #pragma omp parallel firstprivate(num,k) default(none) private(i,j,swap,id,start_index,end_index) shared(current,previous,col_chunk_size) num_threads(numthreads)
     {
 
         id = omp_get_thread_num();
@@ -150,5 +163,14 @@ void floydserial(int **current, int num, int **previous)
     }
 
 
+}
+
+
+void usage()
+{
+    //printf("Usage: %d N\n", program);
+    //printf("  N: size of matrix\n");
+    printf("please supply argument for size of matrix and number of threads %d\n");
+    exit(1);
 }
 
