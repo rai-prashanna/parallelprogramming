@@ -142,13 +142,12 @@ int main (int argc, char * argv[])
                 nbrs = previous[i+1][j+1] + previous[i+1][j] + previous[i+1][j-1] \
                        + previous[i][j-1] + previous[i][j+1] \
                        + previous[i-1][j-1] + previous[i-1][j] + previous[i-1][j+1];
-                #pragma omp critical
-                {
+
                     if (nbrs == 3 || ( previous[i][j]+nbrs == 3))
                         current[i][j] = 1;
                     else
                         current[i][j] = 0;
-                }
+
             }
 
 
