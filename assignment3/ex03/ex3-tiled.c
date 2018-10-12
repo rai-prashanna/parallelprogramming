@@ -28,7 +28,7 @@ const int INFINITY_VAL = 9999;
 int * pInt = NULL;
 
 int ** initMatrix(int **mtx, int size);
-void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx);
+void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx, int numthreads);
 void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx);
 int ** initNextMatrix(int **mtx, int size, int **frommtx);
 void copyMatrixValues(int **frommtx, int **tomtx, int size);
@@ -66,7 +66,7 @@ int main (int argc, char *argv[])
 
     timestamp_t t0 = get_timestamp();
 
-    floydWarshallTiledParallel(D_matrix, n_mtxsize, D_matrix_nextk);
+    floydWarshallTiledParallel(D_matrix, n_mtxsize, D_matrix_nextk, numthreads);
 
     timestamp_t t1 = get_timestamp();
     double secs = (t1 - t0) / 1000000.0L;
@@ -80,7 +80,7 @@ int main (int argc, char *argv[])
     return 0;
 }
 
-void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx)
+void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx, int numthreads)
 {
     // In k=0, we set the edge costs
     // n step B: skip every B-tile size
