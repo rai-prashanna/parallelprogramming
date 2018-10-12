@@ -111,7 +111,7 @@ void floydparallel(int **current, int num, int **previous)
     int i = 0, j = 0, k = 0;
     int **swap;
     for(k = 0; k < num; k++)
-        #pragma omp parallel for firstprivate(num) private(swap) collapse(2) shared(current,previous)
+        #pragma omp parallel for firstprivate(num) private(swap) collapse(2) shared(current,previous) num_threads(1)
         for(i = 0; i < num; i++)
             for(j = 0; j < num; j++)
             {
