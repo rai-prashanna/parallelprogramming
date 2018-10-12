@@ -74,13 +74,13 @@ int main (int argc, char *argv[])
         }
     }
 
-    printf("The original matrix is : \n");
+    /*printf("The original matrix is : \n");
     for(i = 0; i < size; i++)
     {
         for(j = 0; j < size; j++)
             printf("%d  ", previous[i][j]);
         printf("\n");
-    }
+    }*/
 
     timestamp_t t0 = get_timestamp();
 
@@ -88,13 +88,13 @@ int main (int argc, char *argv[])
 
     timestamp_t t1 = get_timestamp();
 
-    printf("The resultant all-pairs shortest-paths matrix is : \n");
+    /*printf("The resultant all-pairs shortest-paths matrix is : \n");
     for(i = 0; i < size; i++)
     {
         for(j = 0; j < size; j++)
             printf("%d  ", current[i][j]);
         printf("\n");
-    }
+    }*/
 
     double secs = (t1 - t0) / 1000000.0L;
 
