@@ -2,7 +2,4 @@
 
 gcc -Wall -pthread -fopenmp -std=c99 ex01.c -lm  // to compile in testing server like gullviva.it.uu.se
 
-nohup ./a.out <largeNUmber> & // to run in background and it will create nohup.out file where you can see log 
-
-
-
+nohup ./a.out <number of threads> & // to run in background and it will create nohup.out file where you can see log 

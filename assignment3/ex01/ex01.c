@@ -17,7 +17,7 @@ get_timestamp ()
     return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
 
-long int NPRIMES=10000000;
+long int NPRIMES=1000000;
 
 /* Returns the index of the next prime (non-zero, since we "knock out" non-primes by setting their value to zero) */
 long getNextPrime(long i, long *x)
@@ -114,14 +114,13 @@ int main(int argc, char* argv[])
 
     if( argc == 2 )
     {
-         NPRIMES = atoi(argv[1]);
+         NUM_THREADS = atoi(argv[1]);
     }
     else
     {
         printf("please supply arugments for how large prime number is \n");
  	    exit(1);
     }
-
 
     printf("Using %d threads with max = %ld \n", NUM_THREADS, NPRIMES);
 
