@@ -5,64 +5,41 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-#include <sys/time.h>
 #include <time.h>
 #include <omp.h>
 
-typedef unsigned long long timestamp_t;
-
-static timestamp_t
-get_timestamp ()
+typedef struct
 {
-    struct timeval now;
-    gettimeofday (&now, NULL);
-    return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
-}
+    int id;
+    int offset_i;
+    int offset_j;
+} tile;
 
+
+#define CACHE_LINE_SIZE = 64;
 const int intsizebytes = 4;
 // Set tile size to a 4x4 matrix (64/4) = 16 integer values. So 4x4
-<<<<<<< HEAD
-=======
 //const int B_TILE_SIZE = 2;
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
 const int B_TILE_SIZE = 16;
 
 const int MAX_RAND = 101; // If 101, we use infinity
 const int INFINITY_VAL = 9999;
 int * pInt = NULL;
-const int num_threads=16;
+const int num_threads=2;
 
 int ** initMatrix(int **mtx, int size);
+void prettyPrintMatrix(int **mtx, int size);
 void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx);
-<<<<<<< HEAD
-void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx);
-=======
 void floydWarshallTiledSerial(int **mtx, int size);
 void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx,int numthreads);
-void floydWarshallTileCore(int **mtx, int size, int k);
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
+void floydWarshallTileCore(int **mtx, int size, int k,int numthreads);
 int ** initNextMatrix(int **mtx, int size, int **frommtx);
 void copyMatrixValues(int **frommtx, int **tomtx, int size);
-void prettyPrintMatrix(int **mtx, int size);
 void usage();
 
 int main (int argc, char *argv[])
 {
     int n_mtxsize;
-<<<<<<< HEAD
-    int numthreads=0;
-    if (argc != 3)
-    {
-        usage();
-    }
-
-    if (argc == 3)
-    {
-        n_mtxsize = atoi(argv[1]);
-        numthreads=atoi(argv[2]);
-    }
-    printf("Running tiled version with size matrix = %d, number of threads=%d\n", n_mtxsize, numthreads);
-=======
 
 //    if (argc != 2)
 //    {
@@ -79,7 +56,6 @@ int main (int argc, char *argv[])
 //    }
     n_mtxsize=1024;
     printf("Running with size matrix = %d\n", n_mtxsize);
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
     printf("Tiled version with B tile size = %d\n\n", B_TILE_SIZE);
 
     int ** D_matrix = malloc(n_mtxsize*sizeof(int*));
@@ -90,37 +66,21 @@ int main (int argc, char *argv[])
 
     D_matrix = initMatrix(D_matrix, n_mtxsize);
 
-<<<<<<< HEAD
-    //prettyPrintMatrix(D_matrix, n_mtxsize);
-
-    D_matrix_nextk = initNextMatrix(D_matrix_nextk, n_mtxsize, D_matrix);
-
-    timestamp_t t0 = get_timestamp();
-
-    floydWarshallTiledParallel(D_matrix, n_mtxsize, D_matrix_nextk);
-
-    timestamp_t t1 = get_timestamp();
-    double secs = (t1 - t0) / 1000000.0L;
-    printf("execution time is   %lf \n",secs );
-
-    //prettyPrintMatrix(D_matrix, n_mtxsize);
-=======
 
     D_matrix_nextk = initNextMatrix(D_matrix_nextk, n_mtxsize, D_matrix);
 
     floydWarshallTiledParallel(D_matrix, n_mtxsize, D_matrix_nextk);
     //floydWarshallTiledSerial(D_matrix, n_mtxsize);
 
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
 
+    printf("Freeing resources\n");
     free(D_matrix);
     free(D_matrix_nextk);
+    printf("Done\n");
 
     return 0;
 }
 
-<<<<<<< HEAD
-=======
 void floydWarshallTiledSerial(int **mtx, int size)
 {
     // In k=0, we set the edge costs
@@ -136,7 +96,7 @@ void floydWarshallTiledSerial(int **mtx, int size)
             .offset_j = 0   // B_TILE_SIZE
         };*/
 
-        floydWarshallTileCore(mtx, size, k);
+        floydWarshallTileCore(mtx, size, k,num_threads);
         //floydWarshallCore(mtx, B_TILE_SIZE, cr_tile);
 
         // TODO: E, W, N, S tiles
@@ -153,7 +113,7 @@ void floydWarshallTiledSerial(int **mtx, int size)
             // Skip cr tile
             if (t==k)
                 continue;
-            floydWarshallTileCore(mtx, size, k);
+            floydWarshallTileCore(mtx, size, k,num_threads);
         }
 
         for (int t=t_base_row_i; t<t_max_row_i; t=t+size)
@@ -168,32 +128,28 @@ void floydWarshallTiledSerial(int **mtx, int size)
     }
 }
 
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
 void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx)
 {
     // In k=0, we set the edge costs
     // n step B: skip every B-tile size
     int num_tiles_per_dim = size / B_TILE_SIZE;
 
+    // Do we want to omp collapse?
     // over k. reads: mtx, size, B_TILE_SIZE,
-    #pragma omp parallel for firstprivate(size) shared(mtx, next_mtx) num_threads(4)
+    #pragma omp parallel for firstprivate(size) shared(mtx, next_mtx) num_threads(num_threads)
     for (int k=0; k<size; k=k+B_TILE_SIZE)
     {
-<<<<<<< HEAD
-        //int ID = omp_get_thread_num();
-        //printf("I am thread %d\n", ID);
-=======
 
         int ID = omp_get_thread_num();
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
 
         floydWarshallTileCoreParallel(mtx, size, k, next_mtx,num_threads);
 
-        // E, W, N, S tiles
+        // TODO: E, W, N, S tiles
+        // Is it better to collect tiles in array or like below? For parallelize?
         int t_base_col_j = floor(k / size)*size;
         int t_max_col_j = t_base_col_j+size-1;
 
-        int t_base_row_i = floor(k % B_TILE_SIZE)-1;  // 0
+        int t_base_row_i = floor(k % B_TILE_SIZE)-1;  // todo -1 should be 0
         int t_max_row_i = t_base_row_i + (num_tiles_per_dim-1)*size;
 
         for (int t=t_base_col_j; t<t_max_col_j; t=t+B_TILE_SIZE)
@@ -202,12 +158,7 @@ void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx)
             // Skip cr tile
             if (t==k)
                 continue;
-<<<<<<< HEAD
-            //printf("Now iterating over E, W tiles with k %d\n", t);
-            floydWarshallTileCoreParallel(mtx, size, k, next_mtx);
-=======
             floydWarshallTileCoreParallel(mtx, size, k, next_mtx,num_threads);
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
         }
 
         for (int t=t_base_row_i; t<t_max_row_i; t=t+size)
@@ -216,24 +167,15 @@ void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx)
             // Skip cr tile
             if (t==k)
                 continue;
-<<<<<<< HEAD
-            //printf("Now iterating over N, S tiles with k %d\n", t);
-            floydWarshallTileCoreParallel(mtx, size, k, next_mtx);
-=======
             floydWarshallTileCoreParallel(mtx, size, k, next_mtx,num_threads);
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
         }
 
-        // NE, NW, SE, SW tiles
+        // TODO: NE, NW, SE, SW tiles
 
         // All threads must have completed the k iteration before we copy values over to the original mtx
     }
     #pragma omp barrier
     {
-<<<<<<< HEAD
-        //printf("Copying the values from next_mtx into mtx");
-=======
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
         copyMatrixValues(next_mtx, mtx, size);
     }
 
@@ -242,13 +184,8 @@ void floydWarshallTiledParallel(int **mtx, int size, int **next_mtx)
 void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx,int numthreads)
 {
     // Reads from mtx, writes to next_mtx
-<<<<<<< HEAD
-    //printf("  floydWarshallCore now k = %d\n", k);
-    for(int j=0; j<size; ++j)
-=======
     int i = 0, j = 0,start_index,end_index,col_chunk_size,id=0;
     #pragma omp parallel firstprivate(size,k) default(none) private(id,start_index,end_index) shared(mtx,next_mtx) num_threads(numthreads)
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
     {
         id = omp_get_thread_num();
 
@@ -275,9 +212,6 @@ void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx,in
         {
             for(int i=start_index; i<end_index; ++i)
             {
-<<<<<<< HEAD
-                #pragma omp critical
-=======
                 // Set mtx[i][j] for k+1 to the minimum
                 // can skip where i=j
                 if (i==j)
@@ -285,7 +219,6 @@ void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx,in
 
                 int tmpcost = mtx[i][k] + mtx[k][j];
                 if (tmpcost < mtx[i][j])
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
                 {
                     //printf("Changing cost from %d to %d\n", mtx[i][j], tmpcost);
                     next_mtx[i][j] = tmpcost;
@@ -296,16 +229,13 @@ void floydWarshallTileCoreParallel(int **mtx, int size, int k, int **next_mtx,in
                     //printf("Keeping current cost at %d\n", mtx[i][j]);
                 }
             }
-<<<<<<< HEAD
-=======
         }
     }
 }
 
-void floydWarshallTileCore(int **mtx, int size, int k)
+void floydWarshallTileCore(int **mtx, int size, int k,int numthreads)
 {
     int i = 0, j = 0,start_index,id,end_index;
-    int numthreads=4;
 
     #pragma omp parallel firstprivate(size,k) default(none) private(i,j,id,start_index,end_index) shared(mtx) num_threads(numthreads)
     {
@@ -350,7 +280,6 @@ void floydWarshallTileCore(int **mtx, int size, int k)
                     //printf("Keeping current cost at %d\n", mtx[i][j]);
                 }
             }
->>>>>>> 0c22c95c1dae469cb96430e06c338663268ecf61
         }
     }
 }
@@ -401,6 +330,7 @@ int ** initNextMatrix(int **mtx, int size, int **frommtx)
         mtx[r] = malloc(size*sizeof(int));
     }
     copyMatrixValues(frommtx, mtx, size);
+    //copyDMatrix(frommtx, mtx, size);
     return mtx;
 }
 
@@ -415,6 +345,13 @@ void copyMatrixValues(int **frommtx, int **tomtx, int size)
         }
     }
 }
+
+/*int ** copyDMatrix(int **frommtx, int **tomtx, int size) {
+    // Copies the values of frommtx to tomtx
+    int b = sizeof(int) * size * size;
+    frommtx = memcpy (tomtx, frommtx, b);
+    return frommtx;
+}*/
 
 void prettyPrintMatrix(int **mtx, int size)
 {
@@ -431,6 +368,8 @@ void prettyPrintMatrix(int **mtx, int size)
 
 void usage()
 {
-    printf("please supply argument for size of matrix and number of threads.\n");
+    //printf("Usage: %d N\n", program);
+    //printf("  N: size of matrix\n");
+    printf("please supply argument for size of matrix, greater than %d\n", B_TILE_SIZE);
     exit(1);
 }
