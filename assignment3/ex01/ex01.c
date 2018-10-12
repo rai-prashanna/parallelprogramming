@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -18,36 +17,15 @@ get_timestamp ()
     return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
 
-
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 long int NPRIMES=10000000;
-/* Define a data type for the arguments to pass to the functions of threads. */
-struct thread_arg_t
-{
-    /* thread id */
-    unsigned long id;
-
-    /* starting index */
-    unsigned long startindex;
-
-    /* upper index */
-    unsigned long upperlimit;
-
-    /* calclauted primes */
-    long* primes;
-
-
-};
 
 /* Returns the index of the next prime (non-zero, since we "knock out" non-primes by setting their value to zero) */
 long getNextPrime(long i, long *x)
 {
-    pthread_mutex_lock(&lock);
     while (*(x + i) == 0)
     {
         i=i+1;
     }
-    pthread_mutex_unlock(&lock);
 
     return i;
 }
@@ -136,11 +114,11 @@ int main(int argc, char* argv[])
 
     if( argc == 2 )
     {
-         NUM_THREADS = atoi(argv[1]);
+         NPRIMES = atoi(argv[1]);
     }
     else
     {
-        printf("please supply arugments for number of threads\n");
+        printf("please supply arugments for how large prime number is \n");
  	    exit(1);
     }
 
@@ -148,8 +126,6 @@ int main(int argc, char* argv[])
 
     printf("Using %d threads with max = %ld \n", NUM_THREADS, NPRIMES);
 
-    pthread_t threads[NUM_THREADS]; /* An array of the threads. */
-    struct thread_arg_t args[NUM_THREADS]; /* One argument struct per thread. */
     primes = (long*)malloc(NPRIMES * sizeof(long));
     unsigned long sqrt_num = (long) ceil(sqrt((double) NPRIMES));
     unsigned long leftnumbers= NPRIMES-sqrt_num;
