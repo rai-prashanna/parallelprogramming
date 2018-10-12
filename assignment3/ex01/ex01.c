@@ -17,7 +17,8 @@ get_timestamp ()
     return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
 
-long int NPRIMES=1000000;
+int NUM_THREADS=1;
+long int NPRIMES=10000000;
 
 /* Returns the index of the next prime (non-zero, since we "knock out" non-primes by setting their value to zero) */
 long getNextPrime(long i, long *x)
@@ -89,7 +90,7 @@ void *parallelfilterPrimes(long startingindex,long *primes,long maxlimit)
     startingindex=getNextPrime(startingindex, primes);
     for(long i=startingindex; i <= maxlimit; i = nextindex)
     {
-        #pragma omp parallel for firstprivate(i,NPRIMES) shared(primes) schedule (dynamic)
+        #pragma omp parallel for firstprivate(i,NPRIMES) shared(primes) schedule (dynamic) num_threads(NUM_THREADS)
         for(long j = (i*2); j <= NPRIMES; j += i)
         {
 
@@ -110,7 +111,6 @@ void *parallelfilterPrimes(long startingindex,long *primes,long maxlimit)
 int main(int argc, char* argv[])
 {
     long* primes;
-    int NUM_THREADS;
 
     if( argc == 2 )
     {
@@ -141,6 +141,7 @@ int main(int argc, char* argv[])
     double secs = (t1 - t0) / 1000000.0L;
 
 
+    printf("Ran with  %d threads and max = %ld \n", NUM_THREADS, NPRIMES);
     printf("execution time is   %lf \n",secs );
 
     return 0;

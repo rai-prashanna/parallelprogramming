@@ -11,7 +11,7 @@ static timestamp_t
       struct timeval now;
       gettimeofday (&now, NULL);
       return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
-    }
+    };
 
 
 
@@ -122,13 +122,12 @@ int main(int argc, char* argv[])
     unsigned long equal_longervals=leftnumbers/NUM_THREADS;
     if( argc == 2 )
     {
-
          NUM_THREADS = atoi(argv[1]);
     }
     else
     {
         printf("please supply arugments for number of threads");
- 	exit(1);
+ 	  exit(1);
     }
 
     primes=init(primes,NPRIMES);
