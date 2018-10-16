@@ -8,20 +8,21 @@ int main(int argc, char *argv[])
   double PI25DT = 3.141592653589793238462643;
   double mypi, pi, h, sum, x, a;
 
-  //MPI_Init(&argc, &argv);
-  //MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-  //MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-
-  //while (!done) {
-    //if (myid == 0) {
-      printf("Enter the num of intervals: (0 quits)");
-      scanf("%d",&n);
-      done=1;
-   //}
-
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
   MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+
+  //while (!done) {
+    if (myid == 0) {
+      printf("Enter the num of intervals: (0 quits)");
+      scanf("%d",&n);
+      done=1;
+    }
+  //}
+
+  //MPI_Init(&argc, &argv);
+  //MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+  //MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
   MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
