@@ -79,14 +79,14 @@ unsigned long *update(unsigned long *primes,int myoffset, int chunk, int myid, i
     printf("\n");
     printf("outside filter function before prime with task id = %d \n",myid);
     printf("\n");
+    printf("Got it \n");
 
-
-    printf("Sample results: \n");
+        printf("Sample results: \n");
     int offset = 0;
     for (int i=0; i<numtasks; i++)
     {
         for (int j=0; j<5; j++)
-            printf("Prime number: %ld\n", *(primes +(offset+j)));
+            printf(" task id=%d  with  index=%d Prime number: %ld\n", myid,(offset+j),*(primes +(offset+j)));
         printf("\n");
         offset = offset + chunk;
     }
@@ -166,7 +166,7 @@ int main (int argc, char *argv[])
 
         }
 
-        printf("Got it \n");
+
 
         /* Get final sum and print sample results */
 //        MPI_Reduce(&mysum, &sum, 1, MPI_FLOAT, MPI_SUM, MASTER, MPI_COMM_WORLD);
