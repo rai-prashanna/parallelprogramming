@@ -100,6 +100,14 @@ int main(int argc, char* argv[])
     double ar[arraysize];
 
     // TODO: how should NPRIMES be passed in? If NPRIMES is small, then need extra code
+        if(argc == 2)
+        {
+            int size = atoi(argv[1]);
+            printf("testing get argument value: %d\n",size);
+
+        }
+    // I HOPE THIS IS WILL ANSWER YOUR TODO QUESTION
+    
     NPRIMES = 100;
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
 
