@@ -8,7 +8,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
-bool DEBUG_MODE = true;
+bool DEBUG_MODE = false;
 
 typedef unsigned long long timestamp_t;
 static timestamp_t
@@ -89,16 +89,32 @@ unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *pr
     return primes;
 }
 
+unsigned long *parallelfilterPrimes(unsigned long *primes,unsigned long start_index, unsigned long maxlimit,unsigned long end_index)
+{
+    for(unsigned long i=start_index; i <= end_index; i =getNextPrime(i+1,primes))
+    {
+
+        for(unsigned long j = (i*2); j < maxlimit; j += i)
+        {
+            *(primes +j) = 0;
+
+        }
+
+    }
+    return primes;
+}
+
 
 int main(int argc, char* argv[])
 {
     // Note that MPI executes all code in parallel that is not explicitly for a single rank
     unsigned long* primes;
 
-    int rank, size, chunk_size, test_nr;
-    int arraysize = 10;
-    double ar[arraysize];
+    int rank, size, chunksize, offset;
+    //int arraysize = 10;
+    //double ar[arraysize];
 
+    /*
     // TODO: how should NPRIMES be passed in? If NPRIMES is small, then need extra code
         if(argc == 2)
         {
@@ -107,13 +123,20 @@ int main(int argc, char* argv[])
 
         }
     // I HOPE THIS IS WILL ANSWER YOUR TODO QUESTION
+    */
     
     NPRIMES = 100;
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
+    unsigned long leftnumbers = NPRIMES-sqrt_num;
 
     MPI_Init(NULL, NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+    int otag = 1;
+    int primestag = 2;
+
+    // distribute CHUNKS to different processes
+    chunksize = leftnumbers / size;
 
     if (rank==0) {
         // Serial section
@@ -128,21 +151,17 @@ int main(int argc, char* argv[])
             exit(1);
         }*/
 
-        printf("calculating prime numbers up to %lu \n", NPRIMES);
+        printf("Calculating prime numbers up to %lu \n", NPRIMES);
+        printf("Using %d number of processes \n", size);
 
         primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-        //unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
-        unsigned long leftnumbers= NPRIMES-sqrt_num;
 
         primes=parallelinit(primes,NPRIMES);
 
         timestamp_t t0 = get_timestamp();
 
         primes=seqfilterPrimesSqrt(2,primes,sqrt_num);
-        printf("Done with seqfilterPrimesSqrt \n");
-
-        // distribute CHUNKS to different processes
-        chunk_size = leftnumbers / size;
+        printf("Done with seqfilterPrimesSqrt to nr %d \n", sqrt_num);
 
         /*make iterations from 2 to NPRIMES and update counter with next prime number*/
         // For MPI, give each process a large section to work on and then send back result to process 0
@@ -150,11 +169,16 @@ int main(int argc, char* argv[])
 
         // Each process not 0 should first wait to receive a chunk of numbers to work on
         // Process 0 sends this, then waits to get results back
+        offset = sqrt_num + 1;
+
         for (i=1; i<size; i++) {
-            // TODO: send either the chunk size OR the starting limit to each process
+            // Send the offset and primes aray to each process
             // Processes can use rank to calculate the start_index, end_index;
-            if (DEBUG_MODE) printf("Process 0 now sending the chunk size to process %d \n", i);    
-            MPI_Send(&chunk_size, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            if (DEBUG_MODE) printf("Process 0 now sending the offset %d to process %d \n", offset, i);
+            MPI_Send(&offset, 1, MPI_INT, i, otag, MPI_COMM_WORLD);
+            MPI_Send(primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD);
+
+            offset = offset + chunksize;
         }
 
         // Collect the results from each process
@@ -163,16 +187,14 @@ int main(int argc, char* argv[])
         for (i=1; i<size; i++) {
             //MPI_Recv(data, count, datatype, source, tag, communicator, status)
 
-            MPI_Recv(&ar, 10, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            if (DEBUG_MODE) printf("Process 0 received from process %d \n", i);
+            MPI_Recv(primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if (DEBUG_MODE) printf("Process 0 received a completed primes from process %d \n", i);
 
-            for (aridx=0; aridx<arraysize; aridx++) {
+            // TODO: process the received NPRIMES
+
+            /*for (aridx=0; aridx<arraysize; aridx++) {
                 if (DEBUG_MODE) printf("Received a value %d \n", aridx);
-            }
-
-            /*MPI_Recv(&test_nr, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            printf("Process 0 received value %d from process %d \n", test_nr, i);*/
-
+            }*/
         }
 
         displayPrimeNumbers(primes,NPRIMES);
@@ -185,54 +207,34 @@ int main(int argc, char* argv[])
     }
     else {
         // Parallel section with the other processes
-        int start_index, end_index;
+        int start_index, end_index, maxlimit;
 
         if (DEBUG_MODE) printf("Process %d now executing \n", rank);
 
         // MPI_Recv(data, count, datatype, source, tag, communicator, status)
-        MPI_Recv(&chunk_size, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("Process %d received chunk size %d from process 0\n", rank, chunk_size);
+        MPI_Recv(&offset, 1, MPI_INT, 0, otag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Process %d received offset %d from process 0\n", rank, chunksize);
 
-        int startingindex = sqrt_num+1;
+        MPI_Recv(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Process %d received the primes array from process 0\n", rank);
 
-        if(rank==1)
-        {
-            start_index=startingindex;
-            end_index = chunk_size;
-        }
-        else if (rank == size - 1)
-        {
-            start_index = rank * chunk_size+1;
+        start_index = offset;
+
+        if (rank == size - 1) {
             end_index = NPRIMES;
         }
-        else
-        {
-            start_index = rank * chunk_size+1;
-            end_index = (rank+1)*chunk_size;
+        else {
+            end_index = start_index + chunksize;
         }
 
-        printf("Process %d would search primes between start index=%d to end index=%d \n", rank, start_index, end_index);
+        printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
 
-        /*test_nr = rank + 100;
-        MPI_Send(&test_nr, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);*/
-
-        // TODO: what should we pass to the ranks to process? An array of the numbers to search?
-        for(unsigned long i=start_index; i <= end_index; i =getNextPrime(i+1,primes))
-        {
-
-            for(unsigned long j = (i*2); j <= maxlimit; j += i)
-            {
-                *(primes +j) = 0;
-
-            }
-        }
+        primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);
 
         // Send back the primes result
         // Send back an array of marked primes
-        MPI_Send(&ar, 10, MPI_INT, 0, 0, MPI_COMM_WORLD);
+        MPI_Send(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD);
     }
-
-    //primes=parallelfilterPrimes(sqrt_num+1,primes,NPRIMES,leftnumbers);
 
     MPI_Finalize();
 
