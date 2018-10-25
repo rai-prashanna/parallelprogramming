@@ -166,7 +166,6 @@ int main(int argc, char* argv[])
         /*make iterations from 2 to NPRIMES and update counter with next prime number*/
         // For MPI, give each process a large section to work on and then send back result to process 0
         offset = sqrt_num + 1;
-
         for (i=1; i<size; i++) {
             // Send the offset and primes aray to each process
             // Processes can use rank to calculate the start_index, end_index;
@@ -179,6 +178,7 @@ int main(int argc, char* argv[])
 
         // Collect the results and process the received partial primes
         printf("Collecting the results from each process \n");
+        offset = sqrt_num + 1;
         for (i=1; i<size; i++) {
 
             unsigned long* partial_primes;
@@ -189,11 +189,13 @@ int main(int argc, char* argv[])
 
             if (i == 3) {
                 // see what we got back in partial_primes
-                for (aridx=0; aridx<NPRIMES; aridx++) {
+                for (aridx=offset; aridx<NPRIMES; aridx++) {
                     printf("A partial_primes value %d at index %d \n", partial_primes[aridx], aridx);
                     // todo: set primes[aridx] = partial_primes[aridx] for this chunk
                 }
             }
+
+            offset = offset + chunksize;
         }
 
     }
