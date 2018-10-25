@@ -142,6 +142,9 @@ int main(int argc, char* argv[])
         // Serial section
         int i, aridx;
 
+        unsigned long* partial_primes;
+        partial_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
+
         // The programs should take N = the number of max primes
         /*if(argc == 2)
         {
@@ -181,20 +184,23 @@ int main(int argc, char* argv[])
         offset = sqrt_num + 1;
         for (i=1; i<size; i++) {
 
-            unsigned long* partial_primes;
-            partial_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-
             MPI_Recv(partial_primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (DEBUG_MODE) printf("Process 0 received a completed primes from process %d \n", i);
 
-            if (i == 3) {
+            /*if (i == 3) {
                 // see what we got back in partial_primes
                 for (aridx=offset; aridx<NPRIMES; aridx++) {
                     printf("A partial_primes value %d at index %d \n", partial_primes[aridx], aridx);
-                    // todo: set primes[aridx] = partial_primes[aridx] for this chunk
+                }
+            }*/
+
+            // set primes[aridx] = partial_primes[aridx] for this chunk
+            for (aridx=offset; aridx<NPRIMES; aridx++) {
+                if (partial_primes[aridx] == 0) {
+                    primes[aridx] = partial_primes[aridx];
                 }
             }
-
+            
             offset = offset + chunksize;
         }
 
@@ -236,7 +242,7 @@ int main(int argc, char* argv[])
         t1 = get_timestamp();
         double secs = (t1 - t0) / 1000000.0L;
 
-        ////displayPrimeNumbers(primes,NPRIMES);
+        displayNumbers(primes,NPRIMES);
 
         printf("execution time is   %lf \n",secs );
         printf("Ran with %d number of ranks (processes) \n", size);
