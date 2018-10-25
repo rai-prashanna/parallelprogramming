@@ -6,7 +6,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
-unsigned long NPRIMES=1000;
+unsigned long NPRIMES=10000;
 
 bool DEBUG_MODE = false;
 
@@ -19,6 +19,7 @@ get_timestamp ()
     return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
 /* Define a data type for the arguments to pass to the functions of threads. */
+
 
 
 /* Returns the index of the next prime (non-zero, since we "knock out" non-primes by setting their value to zero) */
@@ -42,7 +43,7 @@ void displayPrimeNumbers(unsigned long *primes,unsigned long NPRIMES)
             printf("%ld   ", *(primes +i));
         }
     }
-    printf("\n")
+    printf("\n");
 }
 
 void displayNumbers(unsigned long *primes,unsigned long NPRIMES)
@@ -70,9 +71,9 @@ unsigned long *parallelinit(unsigned long *primes,unsigned long NPRIMES)
 }
 
 
-
 unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *primes,unsigned long maxlimit,unsigned long end_index)
 {
+        startingindex=getNextPrime(startingindex, primes);
         for(unsigned long i=startingindex; i <= end_index; i =getNextPrime(i+1,primes))
         {
 
@@ -88,6 +89,7 @@ unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *pr
 
 unsigned long *parallelfilterPrimes(unsigned long *primes,unsigned long start_index, unsigned long maxlimit,unsigned long end_index)
 {
+    start_index=getNextPrime(start_index, primes);
     for(unsigned long i=start_index; i <= end_index; i =getNextPrime(i+1,primes))
     {
 
@@ -101,6 +103,15 @@ unsigned long *parallelfilterPrimes(unsigned long *primes,unsigned long start_in
     return primes;
 }
 
+void copyValues(unsigned long *from, unsigned long *to, int size)
+{
+    // Copies the values of from to to
+    for (int i=0; i<size; i++)
+    {
+            to[i] = from[i];
+    }
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -112,7 +123,6 @@ int main(int argc, char* argv[])
     unsigned long* primes;
     primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
 
-    ////NPRIMES = 100;
     /*
     // To finish, pass in NPRIMES. NPRIMES should be > 10
         if(argc == 2)
@@ -163,9 +173,11 @@ int main(int argc, char* argv[])
 
         primes=seqfilterPrimesSqrt(2, primes, NPRIMES, sqrt_num);
 
+        copyValues(primes, partial_primes, NPRIMES);
+
         /*make iterations from 2 to NPRIMES and update counter with next prime number*/
         // For MPI, give each process a large section to work on and then send back result to process 0
-        offset = sqrt_num;
+        offset = sqrt_num + 1;
         for (i=1; i<size; i++) {
             // Send the offset and primes aray to each process
             // Processes can use rank to calculate the start_index, end_index;
@@ -186,13 +198,15 @@ int main(int argc, char* argv[])
 
             // set primes[aridx] = partial_primes[aridx] for this chunk
             for (aridx=offset; aridx<NPRIMES; aridx++) {
-                if (partial_primes[aridx] == 0) {
-                    primes[aridx] = 0;
+                if ( *(partial_primes + aridx) == 0 ) {
+                    *(primes + aridx) = 0;
                 }
             }
             
             offset = offset + chunksize;
         }
+
+        free(partial_primes);
 
     } /* end of master section */
     else {
@@ -208,10 +222,12 @@ int main(int argc, char* argv[])
         start_index = offset;
 
         if (rank == size - 1) {
+            start_index = rank * chunksize+1;
             end_index = NPRIMES - 1;
         }
         else {
-            end_index = start_index + chunksize;
+            start_index = rank * chunksize+1;
+            end_index = (rank+1)*chunksize;
         }
 
         printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
@@ -236,6 +252,8 @@ int main(int argc, char* argv[])
 
         printf("End of program \n");
     }
+
+    free(primes);
 
     MPI_Finalize();
 
