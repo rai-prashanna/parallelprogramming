@@ -83,7 +83,6 @@ unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *pr
 
         }
 
-
     return primes;
 }
 
@@ -118,14 +117,13 @@ int main(int argc, char* argv[])
     NPRIMES = 100;
 
     /*
-    // TODO: how should NPRIMES be passed in? If NPRIMES is small, then need extra code
+    // To finish, pass in NPRIMES. NPRIMES should be > 10
         if(argc == 2)
         {
             int size = atoi(argv[1]);
             printf("testing get argument value: %d\n",size);
 
         }
-    // I HOPE THIS IS WILL ANSWER YOUR TODO QUESTION
     */
     
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
@@ -142,6 +140,8 @@ int main(int argc, char* argv[])
 
     if (rank==0) {
         // Serial section
+        int i, aridx;
+
         // The programs should take N = the number of max primes
         /*if(argc == 2)
         {
@@ -165,10 +165,6 @@ int main(int argc, char* argv[])
 
         /*make iterations from 2 to NPRIMES and update counter with next prime number*/
         // For MPI, give each process a large section to work on and then send back result to process 0
-        int i, aridx;
-
-        // Each process not 0 should first wait to receive a chunk of numbers to work on
-        // Process 0 sends this, then waits to get results back
         offset = sqrt_num + 1;
 
         for (i=1; i<size; i++) {
@@ -181,9 +177,8 @@ int main(int argc, char* argv[])
             offset = offset + chunksize;
         }
 
-        // Collect the results from each process
+        // Collect the results and process the received partial primes
         printf("Collecting the results from each process \n");
-
         for (i=1; i<size; i++) {
 
             unsigned long* partial_primes;
@@ -192,10 +187,12 @@ int main(int argc, char* argv[])
             MPI_Recv(partial_primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (DEBUG_MODE) printf("Process 0 received a completed primes from process %d \n", i);
 
-            // TODO: process the received NPRIMES
-
-            for (aridx=0; aridx<NPRIMES; aridx++) {
-                ////printf("A partial_primes value %d at index %d \n", partial_primes[aridx], aridx);
+            if (i == 3) {
+                // see what we got back in partial_primes
+                for (aridx=0; aridx<NPRIMES; aridx++) {
+                    printf("A partial_primes value %d at index %d \n", partial_primes[aridx], aridx);
+                    // todo: set primes[aridx] = partial_primes[aridx] for this chunk
+                }
             }
         }
 
