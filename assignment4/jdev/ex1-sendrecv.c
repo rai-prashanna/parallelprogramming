@@ -6,6 +6,8 @@
 #include <mpi.h>
 #include <stdbool.h>
 
+unsigned long NPRIMES=1000;
+
 bool DEBUG_MODE = false;
 
 typedef unsigned long long timestamp_t;
@@ -16,7 +18,6 @@ get_timestamp ()
     gettimeofday (&now, NULL);
     return  now.tv_usec + (timestamp_t)now.tv_sec * 1000000;
 }
-unsigned long NPRIMES=100000000;
 /* Define a data type for the arguments to pass to the functions of threads. */
 
 
@@ -38,9 +39,10 @@ void displayPrimeNumbers(unsigned long *primes,unsigned long NPRIMES)
     {
         if ( *(primes +i) != 0 )
         {
-            printf("Prime number: %ld\n", *(primes +i));
+            printf("%ld   ", *(primes +i));
         }
     }
+    printf("\n")
 }
 
 void displayNumbers(unsigned long *primes,unsigned long NPRIMES)
@@ -110,8 +112,7 @@ int main(int argc, char* argv[])
     unsigned long* primes;
     primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
 
-    NPRIMES = 100;
-
+    ////NPRIMES = 100;
     /*
     // To finish, pass in NPRIMES. NPRIMES should be > 10
         if(argc == 2)
@@ -186,7 +187,7 @@ int main(int argc, char* argv[])
             // set primes[aridx] = partial_primes[aridx] for this chunk
             for (aridx=offset; aridx<NPRIMES; aridx++) {
                 if (partial_primes[aridx] == 0) {
-                    primes[aridx] = partial_primes[aridx];
+                    primes[aridx] = 0;
                 }
             }
             
