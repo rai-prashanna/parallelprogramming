@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include <math.h>
 #include <sys/time.h>
 //#include <sys/resource.h>
@@ -33,24 +34,25 @@ unsigned long getNextPrime(unsigned long i, unsigned long *x)
 
 void displayPrimeNumbers(unsigned long *primes,unsigned long NPRIMES)
 {
-    printf("display all primes[] \n");
+    if (DEBUG_MODE) printf("display all primes[] \n");
 
     for(unsigned long i=2; i < NPRIMES; i++)
     {
         if ( *(primes +i) != 0 )
         {
-            printf("Prime number: %ld\n", *(primes +i));
+            if (DEBUG_MODE) printf("Prime number: %ld\n", *(primes +i));
         }
     }
 }
 
 void displayNumbers(unsigned long *primes,unsigned long NPRIMES)
 {
-    printf("display all elements[] \n");
+    if (DEBUG_MODE) printf("display all elements[] \n");
 
     for(unsigned long i=2; i < NPRIMES; i++)
     {
-        printf("Number at index %d: %ld\n", i, *(primes +i));
+        if (DEBUG_MODE) printf("Prime number: %ld\n", *(primes +i));
+
     }
 }
 
@@ -89,12 +91,10 @@ unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *pr
 
 unsigned long *parallelfilterPrimes(unsigned long *primes,unsigned long start_index, unsigned long maxlimit,unsigned long end_index)
 {
-    if (DEBUG_MODE) printf("In parallelfilterPrimes with start_index %d, maxlimit %d, end_index %d", start_index, maxlimit, end_index);
-
     for(unsigned long i=start_index; i <= end_index; i =getNextPrime(i+1,primes))
     {
 
-        for(unsigned long j = (i*2); j <= maxlimit; j += i)
+        for(unsigned long j = (i*2); j < maxlimit; j += i)
         {
             *(primes +j) = 0;
 
@@ -108,14 +108,11 @@ unsigned long *parallelfilterPrimes(unsigned long *primes,unsigned long start_in
 int main(int argc, char* argv[])
 {
     // Note that MPI executes all code in parallel that is not explicitly for a single rank
+    unsigned long* primes;
 
     int rank, size, chunksize, offset;
-    timestamp_t t0, t1;
-    
-    unsigned long* primes;
-    primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-
-    NPRIMES = 100;
+    //int arraysize = 10;
+    //double ar[arraysize];
 
     /*
     // TODO: how should NPRIMES be passed in? If NPRIMES is small, then need extra code
@@ -128,6 +125,7 @@ int main(int argc, char* argv[])
     // I HOPE THIS IS WILL ANSWER YOUR TODO QUESTION
     */
     
+    NPRIMES = 100;
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
     unsigned long leftnumbers = NPRIMES-sqrt_num;
 
@@ -156,9 +154,11 @@ int main(int argc, char* argv[])
         printf("Calculating prime numbers up to %lu \n", NPRIMES);
         printf("Using %d number of processes \n", size);
 
+        primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
+
         primes=parallelinit(primes,NPRIMES);
 
-        t0 = get_timestamp();
+        timestamp_t t0 = get_timestamp();
 
         primes=seqfilterPrimesSqrt(2,primes,sqrt_num);
         printf("Done with seqfilterPrimesSqrt to nr %d \n", sqrt_num);
@@ -185,29 +185,35 @@ int main(int argc, char* argv[])
         printf("Collecting the results from each process \n");
 
         for (i=1; i<size; i++) {
+            //MPI_Recv(data, count, datatype, source, tag, communicator, status)
 
-            unsigned long* partial_primes;
-            partial_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-
-            MPI_Recv(partial_primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            MPI_Recv(primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             if (DEBUG_MODE) printf("Process 0 received a completed primes from process %d \n", i);
 
             // TODO: process the received NPRIMES
 
-            for (aridx=0; aridx<NPRIMES; aridx++) {
-                ////printf("A partial_primes value %d at index %d \n", partial_primes[aridx], aridx);
-            }
+            /*for (aridx=0; aridx<arraysize; aridx++) {
+                if (DEBUG_MODE) printf("Received a value %d \n", aridx);
+            }*/
         }
+
+        displayPrimeNumbers(primes,NPRIMES);
+        timestamp_t t1 = get_timestamp();
+        double secs = (t1 - t0) / 1000000.0L;
+
+        printf("execution time is   %lf \n",secs );
+        printf("Ran with %d number of ranks (processes) \n", size);
 
     }
     else {
         // Parallel section with the other processes
-        int start_index, end_index;
+        int start_index, end_index, maxlimit;
 
         if (DEBUG_MODE) printf("Process %d now executing \n", rank);
 
+        // MPI_Recv(data, count, datatype, source, tag, communicator, status)
         MPI_Recv(&offset, 1, MPI_INT, 0, otag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("Process %d received offset %d from process 0\n", rank, offset);
+        printf("Process %d received offset %d from process 0\n", rank, chunksize);
 
         MPI_Recv(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         printf("Process %d received the primes array from process 0\n", rank);
@@ -215,7 +221,7 @@ int main(int argc, char* argv[])
         start_index = offset;
 
         if (rank == size - 1) {
-            end_index = NPRIMES - 1;
+            end_index = NPRIMES;
         }
         else {
             end_index = start_index + chunksize;
@@ -223,26 +229,11 @@ int main(int argc, char* argv[])
 
         printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
 
-        primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);   
+        primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);
 
         // Send back the primes result
         // Send back an array of marked primes
         MPI_Send(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD);
-    }
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    if (rank == 0) {
-
-        t1 = get_timestamp();
-        double secs = (t1 - t0) / 1000000.0L;
-
-        ////displayPrimeNumbers(primes,NPRIMES);
-
-        printf("execution time is   %lf \n",secs );
-        printf("Ran with %d number of ranks (processes) \n", size);
-
-        printf("End of program \n");
     }
 
     MPI_Finalize();
