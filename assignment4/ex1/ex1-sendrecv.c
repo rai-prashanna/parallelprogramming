@@ -6,7 +6,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
-unsigned long NPRIMES=10000000;
+unsigned long NPRIMES=10000;
 
 bool DEBUG_MODE = false;
 
@@ -70,32 +70,19 @@ unsigned long *parallelinit(unsigned long *primes,unsigned long NPRIMES)
     return primes;
 }
 
-unsigned long *init(unsigned long *primes,unsigned long NPRIMES)
-{
-    /* we start at 2 because it is the smallest prime */
-    /*list all numbers from 2 to max */
-    for(unsigned long i=0; i < NPRIMES; i++)
-    {
-        *(primes +i) = 0;
-
-    }
-
-    printf("init of primes[] \n");
-    return primes;
-}
 
 unsigned long *seqfilterPrimesSqrt(unsigned long startingindex,unsigned long *primes,unsigned long maxlimit,unsigned long end_index)
 {
-    startingindex=getNextPrime(startingindex, primes);
-    for(unsigned long i=startingindex; i <= end_index; i =getNextPrime(i+1,primes))
-    {
-
-        for(unsigned long j = (i*2); j <= maxlimit; j += i)
+        startingindex=getNextPrime(startingindex, primes);
+        for(unsigned long i=startingindex; i <= end_index; i =getNextPrime(i+1,primes))
         {
-            *(primes +j) = 0;
 
+            for(unsigned long j = (i*2); j <= maxlimit; j += i)
+            {
+                *(primes +j) = 0;
+
+            }
         }
-    }
 
     return primes;
 }
@@ -121,7 +108,7 @@ void copyValues(unsigned long *from, unsigned long *to, int size)
     // Copies the values of from to to
     for (int i=0; i<size; i++)
     {
-        to[i] = from[i];
+            to[i] = from[i];
     }
 }
 
@@ -132,10 +119,19 @@ int main(int argc, char* argv[])
 
     int rank, size, chunksize, offset;
     timestamp_t t0, t1;
-
+    
     unsigned long* primes;
     primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
 
+    /*
+    // To finish, pass in NPRIMES. NPRIMES should be > 10
+        if(argc == 2)
+        {
+            int size = atoi(argv[1]);
+            printf("testing get argument value: %d\n",size);
+        }
+    */
+    
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
     unsigned long leftnumbers = NPRIMES-sqrt_num;
 
@@ -145,80 +141,110 @@ int main(int argc, char* argv[])
     int otag = 1;
     int primestag = 2;
 
-    unsigned long* global_primes;
-    global_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
     // distribute CHUNKS to different processes
     chunksize = leftnumbers / size;
 
-    if (rank==0)
-    {
+    if (rank==0) {
         /***** Master task only ******/
         // Serial section
         int i, aridx;
 
         unsigned long* partial_primes;
         partial_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
+
+        // The programs should take N = the number of max primes
+        /*if(argc == 2)
+        {
+            NPRIMES = atoi(argv[1]);
+        }
+        else
+        {
+            printf("please supply arguments for number of max primes\n");
+            exit(1);
+        }*/
+
         printf("Calculating prime numbers up to %lu \n", NPRIMES);
         printf("Using %d number of processes \n", size);
 
-        primes = parallelinit(primes,NPRIMES);
-        global_primes = parallelinit(global_primes,NPRIMES);
+        primes=parallelinit(primes,NPRIMES);
 
         t0 = get_timestamp();
 
         primes=seqfilterPrimesSqrt(2, primes, NPRIMES, sqrt_num);
 
-        copyValues(primes, global_primes, NPRIMES);
+        copyValues(primes, partial_primes, NPRIMES);
 
         /*make iterations from 2 to NPRIMES and update counter with next prime number*/
         // For MPI, give each process a large section to work on and then send back result to process 0
+        offset = sqrt_num + 1;
+        for (i=1; i<size; i++) {
+            // Send the offset and primes aray to each process
+            // Processes can use rank to calculate the start_index, end_index;
+            if (DEBUG_MODE) printf("Process 0 now sending the offset %d to process %d \n", offset, i);
+            MPI_Send(&offset, 1, MPI_INT, i, otag, MPI_COMM_WORLD);
+            MPI_Send(primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD);
+
+            offset = offset + chunksize;
+        }
+
+        // Collect the results and process the received partial primes
+        printf("Collecting the results from each process \n");
+        offset = sqrt_num;
+        for (i=1; i<size; i++) {
+
+            MPI_Recv(partial_primes, NPRIMES, MPI_INT, i, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if (DEBUG_MODE) printf("Process 0 received a completed primes from process %d \n", i);
+
+            // set primes[aridx] = partial_primes[aridx] for this chunk
+            for (aridx=offset; aridx<NPRIMES; aridx++) {
+                if ( *(partial_primes + aridx) == 0 ) {
+                    *(primes + aridx) = 0;
+                }
+            }
+            
+            offset = offset + chunksize;
+        }
+
+        free(partial_primes);
 
     } /* end of master section */
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    MPI_Bcast(primes, NPRIMES, MPI_INT, 0, MPI_COMM_WORLD);
-    {
-        /***** all tasks only *****/
+    else {
+        /***** Non-master tasks only *****/
         // Parallel section with the other processes
         int start_index, end_index;
 
-        if (rank == size - 1)
-        {
+        MPI_Recv(&offset, 1, MPI_INT, 0, otag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        printf("Process %d received offset %d from process 0\n", rank, offset);
+
+        MPI_Recv(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+        start_index = offset;
+
+        if (rank == size - 1) {
             start_index = rank * chunksize+1;
             end_index = NPRIMES - 1;
         }
-        else
-        {
+        else {
             start_index = rank * chunksize+1;
             end_index = (rank+1)*chunksize;
         }
 
-//        printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
+        printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
 
-        primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);
-        //   MPI_Bcast(primes, NPRIMES, MPI_INT, rank, MPI_COMM_WORLD);
+        primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);   
 
         // Send back the array of marked primes
+        MPI_Send(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD);
     } /* end of non-master */
 
     MPI_Barrier(MPI_COMM_WORLD);
- //   printf("entering reduce function.........\n");
-    MPI_Reduce(primes,global_primes,NPRIMES,MPI_INT,MPI_BOR, 0, MPI_COMM_WORLD);
-  //  printf("exiting reduce function.........\n");
 
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    //MPI_Reduce(primes,global_primes,NPRIMES,MPI_INT,MPI_SUM, 0, MPI_COMM_WORLD);
-
-
-
-    if (rank == 0)
-    {
+    if (rank == 0) {
 
         t1 = get_timestamp();
         double secs = (t1 - t0) / 1000000.0L;
 
-        displayPrimeNumbers(global_primes,NPRIMES);
+        displayPrimeNumbers(primes,NPRIMES);
 
         printf("execution time is   %lf \n",secs );
         printf("Ran with %d number of ranks (processes) \n", size);
@@ -227,12 +253,8 @@ int main(int argc, char* argv[])
     }
 
     free(primes);
-    free(global_primes);
-
-
 
     MPI_Finalize();
 
     return 0;
 }
-
