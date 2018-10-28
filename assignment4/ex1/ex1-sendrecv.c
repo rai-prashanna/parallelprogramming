@@ -6,7 +6,7 @@
 #include <mpi.h>
 #include <stdbool.h>
 
-unsigned long NPRIMES=10000;
+unsigned long NPRIMES=10000000;
 
 bool DEBUG_MODE = false;
 
@@ -116,21 +116,11 @@ void copyValues(unsigned long *from, unsigned long *to, int size)
 int main(int argc, char* argv[])
 {
     // Note that MPI executes all code in parallel that is not explicitly for a single rank
-
     int rank, size, chunksize, offset;
     timestamp_t t0, t1;
     
     unsigned long* primes;
     primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-
-    /*
-    // To finish, pass in NPRIMES. NPRIMES should be > 10
-        if(argc == 2)
-        {
-            int size = atoi(argv[1]);
-            printf("testing get argument value: %d\n",size);
-        }
-    */
     
     unsigned long sqrt_num = (unsigned long) ceil(sqrt((unsigned long) NPRIMES));
     unsigned long leftnumbers = NPRIMES-sqrt_num;
@@ -151,17 +141,6 @@ int main(int argc, char* argv[])
 
         unsigned long* partial_primes;
         partial_primes = (unsigned long*)malloc(NPRIMES * sizeof(unsigned long));
-
-        // The programs should take N = the number of max primes
-        /*if(argc == 2)
-        {
-            NPRIMES = atoi(argv[1]);
-        }
-        else
-        {
-            printf("please supply arguments for number of max primes\n");
-            exit(1);
-        }*/
 
         printf("Calculating prime numbers up to %lu \n", NPRIMES);
         printf("Using %d number of processes \n", size);
@@ -214,7 +193,7 @@ int main(int argc, char* argv[])
         int start_index, end_index;
 
         MPI_Recv(&offset, 1, MPI_INT, 0, otag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-        printf("Process %d received offset %d from process 0\n", rank, offset);
+        if (DEBUG_MODE) printf("Process %d received offset %d from process 0\n", rank, offset);
 
         MPI_Recv(primes, NPRIMES, MPI_INT, 0, primestag, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
@@ -229,7 +208,7 @@ int main(int argc, char* argv[])
             end_index = (rank+1)*chunksize;
         }
 
-        printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
+        if (DEBUG_MODE) printf("Process %d now searching primes between start index=%d to end index=%d \n", rank, start_index, end_index);
 
         primes=parallelfilterPrimes(primes, start_index, NPRIMES, end_index);   
 
@@ -244,7 +223,7 @@ int main(int argc, char* argv[])
         t1 = get_timestamp();
         double secs = (t1 - t0) / 1000000.0L;
 
-        displayPrimeNumbers(primes,NPRIMES);
+        ////displayPrimeNumbers(primes,NPRIMES);
 
         printf("execution time is   %lf \n",secs );
         printf("Ran with %d number of ranks (processes) \n", size);
