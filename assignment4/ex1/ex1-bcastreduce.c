@@ -174,7 +174,7 @@ int main(int argc, char* argv[])
         // For MPI, give each process a large section to work on and then send back result to process 0
 
     } /* end of master section */
-    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(MPI_COMM_WORLD);
 
     MPI_Bcast(primes, NPRIMES, MPI_INT, 0, MPI_COMM_WORLD);
     {
@@ -201,7 +201,7 @@ int main(int argc, char* argv[])
         // Send back the array of marked primes
     } /* end of non-master */
 
-    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(MPI_COMM_WORLD);
  //   printf("entering reduce function.........\n");
     MPI_Reduce(primes,global_primes,NPRIMES,MPI_INT,MPI_BOR, 0, MPI_COMM_WORLD);
   //  printf("exiting reduce function.........\n");
@@ -218,7 +218,7 @@ int main(int argc, char* argv[])
         t1 = get_timestamp();
         double secs = (t1 - t0) / 1000000.0L;
 
-        displayPrimeNumbers(global_primes,NPRIMES);
+//        displayPrimeNumbers(global_primes,NPRIMES);
 
         printf("execution time is   %lf \n",secs );
         printf("Ran with %d number of ranks (processes) \n", size);
@@ -235,4 +235,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
